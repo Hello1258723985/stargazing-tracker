@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stargazing Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600&family=Spectral+SC:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0a0e1f;
+    --bg-panel:#111830;
+    --bg-card:#151d3a;
+    --border:#2a3358;
+    --border-hi:#3a4576;
+    --text:#e9ecf6;
+    --text-dim:#8b93bb;
+    --text-faint:#5a6290;
+    --gold:#f4c95d;
+    --gold-dim:#c9a34a;
+    --green:#7be0a8;
+    --danger:#e07b7b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1px 1px at 10% 15%, #ffffff55 50%, transparent 51%),
+      radial-gradient(1px 1px at 80% 10%, #ffffff44 50%, transparent 51%),
+      radial-gradient(2px 2px at 30% 70%, #ffffff33 50%, transparent 51%),
+      radial-gradient(1px 1px at 60% 85%, #ffffff40 50%, transparent 51%),
+      radial-gradient(1px 1px at 90% 60%, #ffffff30 50%, transparent 51%),
+      radial-gradient(1px 1px at 45% 40%, #ffffff2a 50%, transparent 51%),
+      linear-gradient(180deg, #080b18 0%, var(--bg-deep) 40%, #0d1226 100%);
+    background-attachment: fixed;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    padding:32px 20px 60px;
+  }
+  .wrap{max-width:960px;margin:0 auto;}
+  header{text-align:center;margin-bottom:28px;}
+  header .eyebrow{
+    font-family:'Spectral SC',serif;
+    font-size:12px;letter-spacing:2.5px;text-transform:uppercase;
+    color:var(--gold-dim);margin-bottom:10px;
+  }
+  h1{
+    font-family:'Spectral',serif;font-weight:600;
+    font-size:36px;margin:0 0 8px;
+    background:linear-gradient(180deg,#fff8e6,var(--gold));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  header p{color:var(--text-dim);font-size:14px;max-width:580px;margin:0 auto;line-height:1.6;}
+
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  input[type=number]{-moz-appearance:textfield;}
+
+  .tabs{display:flex;gap:8px;margin-bottom:22px;justify-content:center;}
+  .tab-btn{
+    background:var(--bg-panel);border:1px solid var(--border);color:var(--text-dim);
+    border-radius:8px;padding:8px 18px;font-size:13px;font-family:'Inter',sans-serif;
+    cursor:pointer;font-weight:600;
+  }
+  .tab-btn:hover{border-color:var(--border-hi);color:var(--text);}
+  .tab-btn.active{background:linear-gradient(180deg,#2a2410,#1c1f3a);border-color:var(--gold-dim);color:var(--gold);}
+
+  .panel{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:22px 24px;
+    margin-bottom:22px;
+  }
+  .panel-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+  .panel-head h2{
+    font-family:'Spectral',serif;font-weight:600;font-size:19px;margin:0;color:#fff;
+  }
+  .panel-head .sub{font-size:12.5px;color:var(--text-faint);}
+  .panel.collapsed{padding-bottom:22px;}
+  .panel.collapsed .panel-head{margin-bottom:0;}
+  .panel.collapsed .panel-body{display:none;}
+  .collapse-toggle{
+    background:none;border:1px solid var(--border-hi);color:var(--text-faint);border-radius:6px;
+    width:24px;height:24px;flex-shrink:0;cursor:pointer;font-size:11px;line-height:1;
+    display:flex;align-items:center;justify-content:center;transition:transform .15s;
+  }
+  .collapse-toggle:hover{color:var(--gold);border-color:var(--gold-dim);}
+  .panel.collapsed .collapse-toggle{transform:rotate(-90deg);}
+  .toggle-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-dim);cursor:pointer;user-select:none;}
+  .toggle-row input{cursor:pointer;}
+
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px;}
+  .stat{background:var(--bg-panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+  .stat .label{font-size:11px;letter-spacing:0.6px;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px;}
+  .stat .value{font-family:'Spectral',serif;font-size:22px;font-weight:600;color:var(--gold);}
+
+  .shared-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+  .shared-item{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:10px;
+    padding:10px 12px;display:flex;flex-direction:column;gap:4px;
+  }
+  .shared-item.full{border-color:var(--gold-dim);}
+  .shared-item .slabel{font-size:12px;color:var(--text-dim);}
+  .shared-item.full .slabel{color:var(--gold);}
+  .shared-item .sapplies{font-size:10px;color:var(--text-faint);}
+  .shared-item .sinput-row{display:flex;align-items:center;gap:6px;margin-top:2px;}
+  .shared-got{
+    width:52px;background:var(--bg-panel);border:1px solid var(--border-hi);border-radius:5px;
+    color:var(--text);font-size:13px;padding:4px 6px;text-align:right;font-family:'Inter',sans-serif;
+  }
+  .shared-got:focus{outline:none;border-color:var(--gold-dim);}
+  .shared-item .smax{color:var(--text-faint);font-size:11px;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;}
+  .card{
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    position:relative;
+    transition:border-color .15s;
+  }
+  .card.maxed{border-color:var(--green);}
+  .card-top{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+  .gauge{width:38px;height:38px;flex-shrink:0;}
+  .cname{
+    background:transparent;border:none;color:#fff;font-family:'Spectral',serif;
+    font-size:16px;font-weight:600;padding:0;width:100%;
+  }
+  .cname:focus{outline:none;border-bottom:1px solid var(--gold-dim);}
+  .clevel{font-size:12px;color:var(--text-dim);}
+  .clevel b{color:var(--gold);font-weight:600;}
+  .perk{font-size:10.5px;color:var(--text-faint);line-height:1.4;margin:2px 0 12px;font-style:italic;}
+  .remove-btn{
+    position:absolute;top:10px;right:10px;background:none;border:none;color:var(--text-faint);
+    cursor:pointer;font-size:15px;line-height:1;padding:2px;
+  }
+  .remove-btn:hover{color:var(--danger);}
+  .card.excluded-from-total{opacity:0.6;}
+  .count-toggle{margin-top:10px;font-size:11px;color:var(--text-faint);}
+  .count-toggle input{cursor:pointer;}
+
+  .field-row{display:flex;gap:8px;margin-bottom:8px;}
+  .field{flex:1;}
+  .field label{display:block;font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px;}
+
+  .extra-item{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:10px;
+    padding:10px 12px;display:flex;flex-direction:column;gap:4px;
+  }
+  .extra-item.set{border-color:var(--gold-dim);}
+  .extra-item .slabel{font-size:12px;color:var(--text-dim);}
+  .extra-item.set .slabel{color:var(--gold);}
+  .extra-star-input{
+    width:100%;background:var(--bg-panel);border:1px solid var(--border-hi);border-radius:5px;
+    color:var(--text);font-size:13px;padding:5px 7px;font-family:'Inter',sans-serif;margin-top:2px;
+  }
+  .extra-star-input:focus{outline:none;border-color:var(--gold-dim);}
+  .extra-item .resolved{font-size:11px;color:var(--gold-dim);min-height:14px;}
+  .field input{
+    width:100%;background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);font-size:13px;padding:6px 8px;font-family:'Inter',sans-serif;
+  }
+  .field input:focus{outline:none;border-color:var(--gold-dim);}
+
+  .stepper{display:flex;align-items:stretch;gap:0;}
+  .stepper input{border-radius:0;text-align:center;}
+  .step-btn{
+    background:var(--bg-panel);border:1px solid var(--border);color:var(--text-dim);
+    width:26px;flex-shrink:0;cursor:pointer;font-size:14px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .step-btn:first-child{border-radius:6px 0 0 6px;border-right:none;}
+  .step-btn:last-child{border-radius:0 6px 6px 0;border-left:none;}
+  .step-btn:hover{background:var(--bg-card);color:var(--gold);}
+  .step-btn:active{background:var(--border);}
+
+  .bar-track{height:6px;border-radius:4px;background:var(--bg-panel);overflow:hidden;margin:10px 0 8px;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));}
+  .card.maxed .bar-fill{background:linear-gradient(90deg,#4fbf85,var(--green));}
+
+  .need{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--text-dim);}
+  .need b{font-family:'Spectral',serif;font-size:16px;color:#fff;font-weight:600;}
+  .need.done b{color:var(--green);}
+  .need.next-level{margin-top:2px;font-size:11px;color:var(--text-faint);}
+  .need.next-level b{font-size:13px;color:var(--text-dim);}
+  .need.time-next, .need.time-max{margin-top:2px;font-size:11px;color:var(--text-faint);}
+  .need.time-next b, .need.time-max b{font-size:13px;color:var(--gold-dim);}
+
+  .upg-name{font-family:'Spectral',serif;font-size:15px;font-weight:600;color:#fff;margin-bottom:2px;}
+  .upg-level{font-size:12px;color:var(--text-dim);margin-bottom:10px;}
+  .upg-level b{color:var(--gold);font-weight:600;}
+  .vein-list{background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-top:10px;max-height:160px;overflow-y:auto;}
+  .vein-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);padding:2px 0;}
+  .vein-row span:last-child{color:var(--gold-dim);font-family:'Spectral',serif;}
+  .vein-empty{font-size:11px;color:var(--green);font-style:italic;}
+
+  .ore-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .ore-table th{text-align:left;color:var(--text-faint);font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:6px 8px;border-bottom:1px solid var(--border);}
+  .ore-table td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-dim);vertical-align:middle;}
+  .ore-table tr.pass{background:rgba(123,224,168,0.06);}
+  .ore-table tr.pass td:last-child{color:var(--green);font-weight:600;}
+  .ore-table tr.fail td:last-child{color:var(--danger);}
+  .ore-name{color:var(--text);font-family:'Spectral',serif;font-weight:600;}
+  .ore-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border-hi);color:var(--text-dim);margin:1px 3px 1px 0;white-space:nowrap;font-weight:500;}
+  .ore-badge.crit{color:#c4b8ff;border-color:#8f7ff0;background:rgba(143,127,240,0.12);}
+  .ore-badge.dmgred{color:#ffd98a;border-color:var(--gold-dim);background:rgba(244,201,93,0.1);}
+
+  .world-hide-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;user-select:none;}
+  .world-hide-toggle input{cursor:pointer;}
+  .ore-table.collapsed{display:none;}
+
+  footer{text-align:center;margin-top:28px;font-size:11.5px;color:var(--text-faint);}
+  footer button{
+    background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:6px;
+    padding:6px 12px;font-size:12px;cursor:pointer;margin-top:8px;margin-right:6px;
+  }
+  footer button:hover{border-color:var(--gold-dim);color:var(--gold);}
+  footer #resetBtn:hover{border-color:var(--danger);color:var(--danger);}
+  #saveWarn{display:none;font-size:11px;color:var(--danger);margin-top:6px;}
+  #saveWarn button{
+    background:none;border:1px solid var(--danger);color:var(--danger);border-radius:5px;
+    padding:2px 8px;font-size:10.5px;cursor:pointer;margin-left:6px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Idle Obelisk Miner</div>
+    <h1>Stargazing Tracker</h1>
+    <p>Every cap source — shared or single-star — lives in one place below. Edit it once; it applies to every star listed under it.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabStars" type="button">Stars</button>
+    <button class="tab-btn" id="tabTelescope" type="button">Telescope Upgrades</button>
+    <button class="tab-btn" id="tabOres" type="button">Ores</button>
+    <button class="tab-btn" id="tabStatue" type="button">World 3 Platinized Statue</button>
+  </div>
+
+  <div id="starsView">
+    <div class="summary" id="summary"></div>
+
+    <div class="panel" id="panel-capSources">
+      <div class="panel-head">
+        <h2>Cap sources</h2>
+        <span class="sub">Enter how much of each you've obtained</span>
+        <button class="collapse-toggle" data-panel-key="capSources" title="Collapse/expand">&#9660;</button>
+      </div>
+      <div class="panel-body">
+      <div class="shared-grid" id="sharedGrid"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-stars">
+      <div class="panel-head">
+        <h2>Stars</h2>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <label for="globalHourlyGain" style="font-size:12px;color:var(--text-dim);">Hourly gain</label>
+            <input type="text" id="globalHourlyGain" inputmode="decimal" placeholder="e.g. 15m" style="width:90px;background:var(--bg-card);border:1px solid var(--border-hi);border-radius:6px;color:var(--text);font-size:12.5px;padding:5px 8px;font-family:'Inter',sans-serif;"/>
+          </div>
+          <label class="toggle-row" title="Adds 25% to your hourly gain"><input type="checkbox" id="spooningToggle"/> Spooning (+25%)</label>
+          <label class="toggle-row"><input type="checkbox" id="hideCompleted"/> Hide completed</label>
+          <button class="collapse-toggle" data-panel-key="stars" title="Collapse/expand">&#9660;</button>
+        </div>
+      </div>
+      <div class="panel-body">
+      <div class="grid" id="starGrid"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-extraStars">
+      <div class="panel-head">
+        <h2>Extra stars</h2>
+        <span class="sub">A separate need, unrelated to leveling up the star itself — counted in "Time to max all stars" but not in the star's own numbers</span>
+        <button class="collapse-toggle" data-panel-key="extraStars" title="Collapse/expand">&#9660;</button>
+      </div>
+      <div class="panel-body">
+      <div class="shared-grid" id="extraStarsGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="telescopeView" style="display:none">
+    <div class="summary" id="telescopeSummary"></div>
+
+    <div class="panel" id="panel-veinTotals">
+      <div class="panel-head">
+        <h2>Vein totals needed</h2>
+        <span class="sub">Summed across every upgrade below, from its current level to max</span>
+        <button class="collapse-toggle" data-panel-key="veinTotals" title="Collapse/expand">&#9660;</button>
+      </div>
+      <div class="panel-body">
+      <div class="shared-grid" id="veinTotalsGrid"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-telescopeUpgrades">
+      <div class="panel-head">
+        <h2>Telescope Upgrades</h2>
+        <label class="toggle-row"><input type="checkbox" id="telescopeHideCompleted"/> Hide completed</label>
+        <button class="collapse-toggle" data-panel-key="telescopeUpgrades" title="Collapse/expand">&#9660;</button>
+      </div>
+      <div class="panel-body">
+      <div class="grid" id="telescopeGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="oresView" style="display:none">
+    <div class="panel" id="panel-damageInput">
+      <div class="panel-head">
+        <h2>Damage input</h2>
+        <span class="sub">Each field accepts a number or formula ("395+400") — the two are multiplied together</span>
+        <button class="collapse-toggle" data-panel-key="damageInput" title="Collapse/expand">&#9660;</button>
+      </div>
+      <div class="panel-body">
+      <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;">
+        <div class="field" style="max-width:220px;">
+          <label>Crit Damage</label>
+          <input type="text" id="critDamageInput" inputmode="text" placeholder="e.g. 1500"/>
+        </div>
+        <div style="font-family:'Spectral',serif;color:var(--text-faint);font-size:18px;padding-bottom:8px;">&times;</div>
+        <div class="field" style="max-width:220px;">
+          <label>Bomb Damage</label>
+          <input type="text" id="bombDamageInput" inputmode="text" placeholder="e.g. 395+400"/>
+        </div>
+        <div style="padding-bottom:8px;">
+          <span style="color:var(--text-faint);font-size:12px;">= </span>
+          <span id="damageResolved" style="font-family:'Spectral',serif;color:var(--gold);font-size:16px;"></span>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <div id="oreWorlds"></div>
+  </div>
+
+  <div id="statueView" style="display:none">
+    <div class="panel" id="panel-statueLevels">
+      <div class="panel-head">
+        <h2>World 3 Platinized Statue levels</h2>
+        <span class="sub">Tick each level you've completed</span>
+        <button class="collapse-toggle" data-panel-key="statueLevels" title="Collapse/expand">&#9660;</button>
+      </div>
+      <div class="panel-body">
+      <div class="shared-grid" id="statueRows"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-statueBars">
+      <div class="panel-head">
+        <h2>Remaining bars needed</h2>
+        <span class="sub">Sorted by floor, ascending</span>
+        <button class="collapse-toggle" data-panel-key="statueBars" title="Collapse/expand">&#9660;</button>
+      </div>
+      <div class="panel-body">
+      <table class="ore-table" id="statueBarsTable">
+        <thead><tr><th>Bar</th><th>Modifiers</th><th>Total needed</th><th>Floors</th></tr></thead>
+        <tbody id="statueBarsBody"></tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-statueOther">
+      <div class="panel-head">
+        <h2>Remaining veins &amp; gems</h2>
+        <button class="collapse-toggle" data-panel-key="statueOther" title="Collapse/expand">&#9660;</button>
+      </div>
+      <div class="panel-body">
+      <div class="shared-grid" id="statueOtherGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Saved automatically to this artifact.
+    <div id="saveWarn">Couldn't save just now — your changes are still on screen. <button id="retrySaveBtn" type="button">Retry save</button></div>
+    <br>
+    <button id="downloadBtn">Download backup</button>
+    <button id="restoreBtn">Restore from backup</button>
+    <input type="file" id="restoreFile" accept="application/json" style="display:none"/>
+    <button id="resetBtn">Reset all data</button>
+  </footer>
+</div>
+
+<script>
+// Every cap source, whether it applies to one star or many. "value" = flat amount contributed
+// by each star in appliesTo. Sources with "levels"/"perLevel" instead are leveled: got = levels
+// bought (0..levels), and each star's contribution = levels * perLevel[star].
+const SHARED_DEFS = [
+  {id:'starLevelCaps', label:'Star Level Caps', value:2, appliesTo:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces','Ophiuchus','Orion','Hercules','Draco','Cetus','Phoenix','Eridanus','Lynx','Vulpecula']},
+  {id:'agc', label:'Aries/Gemini/Cancer Cap', value:6, appliesTo:['Aries','Gemini','Cancer']},
+  {id:'vao', label:'Virgo/Aqua/Ophi Cap', value:3, appliesTo:['Virgo','Aquarius','Ophiuchus']},
+  {id:'castor', label:'Castor (Archaeology)', value:10, appliesTo:['Cancer','Aquarius']},
+  {id:'megalodon', label:'Megalodon Tribute (Fishing)', value:10, appliesTo:['Cancer']},
+  {id:'atlas', label:'Atlas (Archaeology)', value:10, appliesTo:['Orion','Hercules']},
+  {id:'statueComfort', label:'Statue of Comfort', value:30, appliesTo:['Scorpio','Capricorn']},
+  {id:'eelworm', label:"Eelworm Tribute (Fishing)", value:3, appliesTo:['Hercules','Draco']},
+  {id:'starfish', label:'Starfish Pet Skin', value:12, appliesTo:['Capricorn','Ophiuchus']},
+  {id:'blackHole7', label:'Black Hole Lv7', value:5, appliesTo:['Orion','Draco']},
+  {id:'miningGameSkill', label:'Mining Game Skill', levels:3, perLevel:{Gemini:2, Scorpio:3}, appliesTo:['Gemini','Scorpio']},
+  {id:'geminiStarCap', label:'Gemini Star Cap (Arcanist)', value:20, appliesTo:['Gemini']},
+  {id:'blackHole15', label:'Black Hole Lv15', value:40, appliesTo:['Scorpio']},
+  {id:'obeliskMincer', label:'Obelisk Mincer Skill', value:5, appliesTo:['Scorpio']},
+  {id:'ctrlCV', label:'Ctrl+C Ctrl+V Skill', value:6, appliesTo:['Orion']},
+  {id:'statueTimekeeping', label:'Statue of Timekeeping', value:30, appliesTo:['Hercules']},
+  {id:'hyperion', label:'Hyperion (Archaeology)', value:10, appliesTo:['Draco']},
+  {id:'stormSerpent', label:'Storm Serpent Tribute (Fishing)', value:10, appliesTo:['Cetus']},
+  {id:'gildedTimekeeping', label:'Gilded Statue of Timekeeping', value:18, appliesTo:['Eridanus']},
+];
+
+// [name, baseCost@lvl1, growth multiplier, base (un-upgraded) max level, perk text]
+const DEFAULT_STARS = [
+  ["Aries",150,1.25,20,"Vein Spawn Rate +3% · Golden Vein Chance +1%"],
+  ["Taurus",150,1.25,20,"Pickaxe Damage +12% · Auto Catch Stars +2%"],
+  ["Gemini",150,1.25,20,"Golden Floor Multi 1.02x · Star Spawn Rate +2%"],
+  ["Cancer",300,1.25,20,"Double Contract Point +1% · Contract Cost -1%"],
+  ["Leo",10000,3,3,"Workshop Cap +1 · Triple Super Star Chance +4%"],
+  ["Virgo",300,1.25,25,"Bomb Recharge Rate +1% · Super Star Spawn +1%"],
+  ["Libra",300,1.25,20,"Prestige Points +5% · Triple Lootbug Chance +1%"],
+  ["Scorpio",150,1.15,50,"Pickaxe Damage +15% · All Star Multi +0.5%"],
+  ["Sagittarius",500,1.25,15,"Lootbug Spawn Rate +2% · Triple Star Chance +1%"],
+  ["Capricorn",300,1.25,20,"Experience Gain +15% · Item Duration +1%"],
+  ["Aquarius",3000,1.4,10,"Bar Craft Cost -1% · Golden Lootbug Chance +1%"],
+  ["Pisces",100000,1.69,2,"Pet Level Cap +1 · Rainbow Floor Multi +10x"],
+  ["Ophiuchus",125000,1.8,2,"Banked Freebie Cap +1 · Banked Lootbug Cap +1"],
+  ["Orion",125000,1.27,20,"Craft Chance +0.10% · Golden Ore Chance +0.25%"],
+  ["Hercules",175000,1.29,20,"Supernova Chance +0.15% · Golden Ore Multi +8%"],
+  ["Draco",250000,1.3,20,"Galactic Rainbow Chance +0.25% · Multi +10%"],
+  ["Cetus",1025000,1.3,20,"Polychrome Ore Multi +0.15x · Fish Income +2%"],
+  ["Phoenix",2025000,1.3,18,"Chain / Midas / Veinseeker / Starburst caps +1"],
+  ["Eridanus",500000000000,1.3,20,"All Floor Multi +2% · Stonks Multi +2%"],
+  ["Lynx",10000000000000,1.25,48,"Star Radiant Multi +1% · Infernal Card +0.25%"],
+  ["Vulpecula",16000000000000,1.25,38,"Galactic Portal Chance +0.25% · Multi +1%"],
+].map(([name,baseCost,mult,baseLevel,perk],i)=>({
+  id:'s'+i, name, level:1, stock:0, extra:'', excludeTotal:false, baseCost, mult, baseLevel, perk
+}));
+
+const TELESCOPE_UPGRADES = [
+  {name:"Upgrade Telescope", maxLevel:21, costs:[1,1,5469,6836,10,10680,13350,16688,100,26080,32600,500,50930,63662,1110000,4162500,15609375,58535156,25000000000000,250000000000000000,500000000000000000], types:["Stone Vein","Magma Vein","Virtual Vein","Space Vein","Super Star","Atomic Vein","Cloud Vein","Beach Vein","Super Star","Valley Vein","Cloud Vein","Super Star","Valley Vein","Jurassic Vein","Roman Vein","Industrial Vein","Warfront Vein","Neon Vein","Wonderland Vein","Enchanted Vein","Candyland Vein"]},
+  {name:"Auto-Catch Stars", maxLevel:15, costs:[5500,6875,8594,10742,10,16790,20988,26235,32794,25,51220,64025,80031,100039,50], types:["Virtual Vein","Cloud Vein","Deep Sea Vein","Magma Vein","Super Star","Atomic Vein","Beach Vein","Magma Vein","Valley Vein","Super Star","Cloud Vein","Space Vein","Magma Vein","Atomic Vein","Super Star"]},
+  {name:"Star Spawn Rate", maxLevel:20, costs:[6500,8125,10156,12695,10,19840,24800,31000,38750,25,60540,75675,94594,118242,50,184740,230925,288656,360820,451025], types:["Magma Vein","Space Vein","Cloud Vein","Virtual Vein","Super Star","Deep Sea Vein","Cloud Vein","Valley Vein","Space Vein","Super Star","Deep Sea Vein","Beach Vein","Cloud Vein","Valley Vein","Super Star","Space Vein","Atomic Vein","Virtual Vein","Magma Vein","Deep Sea Vein"]},
+  {name:"Double Star", maxLevel:20, costs:[7500,9375,11719,14649,10,22890,28612,35765,44706,25,69850,87312,109140,136425,50,213160,266450,333062,416328,520410], types:["Space Vein","Magma Vein","Cloud Vein","Virtual Vein","Super Star","Atomic Vein","Deep Sea Vein","Space Vein","Atomic Vein","Super Star","Beach Vein","Deep Sea Vein","Cloud Vein","Virtual Vein","Super Star","Space Vein","Magma Vein","Deep Sea Vein","Beach Vein","Valley Vein"]},
+  {name:"Super Star Spawn", maxLevel:25, costs:[9500,11875,14844,18555,10,28990,36238,45298,56622,25,88480,110600,138250,172812,50,270010,337512,421890,527362,659202,206000000,257500000,321875000,402343750,502929688], types:["Cloud Vein","Virtual Vein","Atomic Vein","Magma Vein","Super Star","Cloud Vein","Beach Vein","Cloud Vein","Space Vein","Super Star","Virtual Vein","Cloud Vein","Beach Vein","Atomic Vein","Super Star","Cloud Vein","Valley Vein","Space Vein","Magma Vein","Beach Vein","Valley Vein","Volcano Vein","Roman Vein","Industrial Vein","Jungle Vein"]},
+  {name:"Star Supernova Chance", maxLevel:25, costs:[50000,65000,84500,109850,50,185650,241345,313748,407872,125,689290,896077,1164900,1514370,250,2560000,3328000,4326400,5624320,7311616,237560000,308828000,401476400,521919320,678495116], types:["Atomic Vein","Beach Vein","Space Vein","Valley Vein","Super Star","Magma Vein","Cloud Vein","Virtual Vein","Deep Sea Vein","Super Star","Beach Vein","Valley Vein","Atomic Vein","Virtual Vein","Super Star","Cloud Vein","Beach Vein","Deep Sea Vein","Valley Vein","Cloud Vein","Jurassic Vein","Roman Vein","Industrial Vein","Warfront Vein","Neon Vein"]},
+  {name:"Super Star 10x Chance", maxLevel:25, costs:[95000,123500,160550,208715,271330,352729,458548,596112,774946,1007430,1309659,1702557,2213324,2877321,3740517,4862672,6321474,8217916,10683291,13888278,451370000,586781000,762815300,991659890,1289157857], types:["Deep Sea Vein","Beach Vein","Valley Vein","Jungle Vein","Volcano Vein","Valley Vein","Jungle Vein","Volcano Vein","Jungle Vein","Volcano Vein","Jungle Vein","Volcano Vein","Jungle Vein","Volcano Vein","Jungle Vein","Volcano Vein","Jungle Vein","Volcano Vein","Jungle Vein","Volcano Vein","Jungle Vein","Volcano Vein","Jungle Vein","Volcano Vein","Neon Vein"]},
+  {name:"Star Supergiant Chance", maxLevel:25, costs:[1000000,1300000,1690000,2197000,2856100,3712930,4826809,6274852,8157308,10604500,13785850,17921605,23298086,30287512,39373766,51185896,66541665,86504164,112455413,146192037,950250000,1235325000,1605922500,2087699250,2714009025], types:["Jurassic Vein","Jungle Vein","Deep Sea Vein","Roman Vein","Volcano Vein","Jurassic Vein","Industrial Vein","Valley Vein","Jungle Vein","Roman Vein","Volcano Vein","Industrial Vein","Jurassic Vein","Deep Sea Vein","Valley Vein","Roman Vein","Industrial Vein","Jurassic Vein","Volcano Vein","Industrial Vein","Jurassic Vein","Roman Vein","Industrial Vein","Warfront Vein","Neon Vein"]},
+  {name:"Capper Upper", maxLevel:5, costs:[500000000,650000000,845000000,1098500000,1428050000], types:["Jurassic Vein","Roman Vein","Industrial Vein","Warfront Vein","Neon Vein"]},
+  {name:"Super Star Supergiant Chance", maxLevel:20, costs:[35000000000,45500000000,59150000000,76895000000,99963500000,129952550000,168938315000,219619809500,285505752350,371157478055,482504721472,627256137914,815432979288,1060062873074,1378081734996,1791506255495,2328958132144,3027645571787,3935939243323,5116721016320], types:["Volcano Vein","Jurassic Vein","Roman Vein","Industrial Vein","Jungle Vein","Volcano Vein","Jurassic Vein","Roman Vein","Industrial Vein","Jungle Vein","Volcano Vein","Jurassic Vein","Roman Vein","Industrial Vein","Jungle Vein","Volcano Vein","Jurassic Vein","Roman Vein","Industrial Vein","Warfront Vein"]},
+  {name:"All Star Multiplier", maxLevel:30, costs:[60000000000,87000000000,126150000000,182917500000,265230375000,384584043750,557646863438,808587951985,1172452530378,1700056169048,2465081445120,3574368095424,5182833738365,7515108920629,10896907934912,15800516505622,22910748933152,33220585953070,48169849631952,69846281966330,101277108851178,146851807834208,212935121359602,308755925971423,447696092658563,649159334354916,941281034814628,1364857500481210,1979043375697754,2869612894761743], types:["Industrial Vein","Warfront Vein","Jurassic Vein","Roman Vein","Industrial Vein","Warfront Vein","Neon Vein","Roman Vein","Industrial Vein","Warfront Vein","Neon Vein","Jurassic Vein","Roman Vein","Warfront Vein","Jurassic Vein","Roman Vein","Industrial Vein","Neon Vein","Jurassic Vein","Roman Vein","Warfront Vein","Beach Vein","Neon Vein","Warfront Vein","Industrial Vein","Roman Vein","Deep Sea Vein","Neon Vein","Warfront Vein","Neon Vein"]},
+  {name:"Super Star Radiant Chance", maxLevel:25, costs:[10000000000000,14500000000000,21025000000000,30486250000000,44205062500000,64097340625000,92941143906250,134764658664062,195408755062890,283342694841190,410846907519726,595728015903603,863805623060224,1252518153437325,1816151322484121,2633419417601976,3818458155522865,5536764325508154,8028308271986823,11641046994380892,16879518141852292,24475301305685824,35489186893244444,51459320995204440,74616015443046432], types:["Wonderland Vein","Wonderland Vein","Wonderland Vein","Wonderland Vein","Wonderland Vein","Pirate Vein","Wonderland Vein","Pirate Vein","Wonderland Vein","Pirate Vein","Arabian Vein","Pirate Vein","Wonderland Vein","Pirate Vein","Wonderland Vein","Arabian Vein","Pirate Vein","Wonderland Vein","Pirate Vein","Wonderland Vein","Arabian Vein","Pirate Vein","Wonderland Vein","Pirate Vein","Wonderland Vein"]},
+  {name:"Star Radiant Multi", maxLevel:25, costs:[5000000000000000000,6750000000000000000,9112500000000001024,12301875000000002048,16607531250000003072,22420167187500007424,30267225703125012480,40860754699218771968,55162018843945345024,74468725439326224384,100532779343090417664,135719252113172070400,183220990352782295040,247348336976256106496,333920254917945786368,450792344139226873856,608569664587956355072,821569047193741164544,1109118213711550611456,1497309588510593515520,2021367944489301442560,2728846725060557275136,3683943078831752478720,4973323156422865715200,6713986261170869239808], types:["Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein","Enchanted Vein"]},
+  {name:"Novagiant Combo Multi", maxLevel:30, costs:[10000000000000000000,13000000000000000000,16900000000000000000,21970000000000000000,28561000000000000000,37129300000000000000,48268090000000000000,62748517000000004096,81573072100000006144,106044993730000011264,137858491849000026112,179216039403700027392,232980851224810029056,302875106592253018112,393737638569928949760,511858930140907634688,665416609183179997184,865041591938134048768,1124554069519574237184,1461920290375446560768,1900496377488080633856,2470645290734505164800,3211838877954856714240,4175390541341313728512,5428007703743708528640,7056410014866821087232,9173333019326867832832,11925332925124928602112,15502932802662408650752,20153812643461130616832], types:["Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein","Candyland Vein"]},
+];
+
+// Canonical tier order for vein types, matching the game's own listing.
+// Anything not in this list (e.g. "Super Star") sorts after all of these.
+// World 3 Platinized Statue upgrade costs, per level (from the in-game cost table screenshot)
+const STATUE_ROWS = [
+  {n:1, bars:[["Omeletite",149.99e21],["Arcusite",144.99e21],["Steamstone",139.99e21],["Rationium",134.99e21]], vein:["Industrial",24.99e9], gems:50000},
+  {n:2, bars:[["Guardium",439.99e21],["Cognite",389.99e21],["Manhattite",449.99e21],["Palmite",374.99e21]], vein:["Warfront",54.99e9], gems:65000},
+  {n:3, bars:[["Duelysium",1.21e24],["Steamstone",1.15e24],["Rationium",1.09e24],["Vaporium",1.04e24]], vein:["Neon",135.99e9], gems:80000},
+  {n:4, bars:[["Pinnaclite",15.62e24],["Resinite",4.52e24],["Genevium",3.42e24],["Ransomite",3.22e24]], vein:["Jurassic",265.99e9], gems:95000},
+  {n:5, bars:[["Carnivorian",82.42e24],["Cognite",16.06e24],["Dynamite",14.96e24],["Vaporium",12.96e24]], vein:["Industrial",415.96e9], gems:110000},
+  {n:6, bars:[["Demonite",6.66e27],["VR-Demonite",6.66e27],["Steamstone",66.66e24],["Ransomite",66.66e24]], vein:["Warfront",666.66e9], gems:125000},
+  {n:7, bars:[["Beepboopium",13.37e27],["Pinguinus",777.77e24],["Macawrock",555.55e24],["Equinine",123.45e24]], vein:["Volcano",777.77e9], gems:140000},
+  {n:8, bars:[["Vaporium",555.55e24],["Palmite",444.44e24],["Ransomite",333.33e24],["MVPD-1988",222.22e24]], vein:["Neon",888.88e9], gems:155000},
+  {n:9, bars:[["Tricerastone",1.23e27],["Guardium",1.23e27],["Equinine",1.23e27],["Rationium",1.23e27]], vein:["Neon",1.25e12], gems:170000},
+];
+const STATUE_DATA_VERSION = 3;
+const BAR_FLOORS = {
+  "Infernite":"67-68", "Blood-Onyx":"67-70", "Omeletite":"73-74", "Resinite":"73-76",
+  "Crabrock":"53-54", "Pinguinus":"59-60", "Impactium":"75-78", "Tricerastone":"77-78",
+  "Duelysium":"79-80", "Arcusite":"79-82", "Phalanxite":"81-84", "Guardium":"83-84",
+  "Cognite":"85-87", "Telophite":"85-89", "Steamstone":"87-90", "Equinine":"89-90",
+  "Dynamite":"91-92", "Genevium":"91-94", "Manhattite":"93-96", "Rationium":"95-96",
+  "Vaporium":"97-98", "Palmite":"97-100", "Ransomite":"99-102", "MVPD-1988":"101-102",
+  "Cyrogem":"69-72",
+  "Pinnaclite":"71-72", "Carnivorian":"65-66", "Demonite":"17-18",
+  "VR-Demonite":"21-24", "Beepboopium":"37-40", "Macawrock":"61-62",
+};
+const VEIN_ORDER = [
+  "Stone Vein","Magma Vein","Virtual Vein","Space Vein","Cloud Vein","Atomic Vein",
+  "Deep Sea Vein","Beach Vein","Valley Vein","Jungle Vein","Volcano Vein","Jurassic Vein",
+  "Roman Vein","Industrial Vein","Warfront Vein","Neon Vein","Wonderland Vein","Pirate Vein",
+  "Arabian Vein","Enchanted Vein","Candyland Vein"
+];
+function veinRank(type){
+  const i = VEIN_ORDER.indexOf(type);
+  return i === -1 ? VEIN_ORDER.length : i;
+}
+function veinCompare(a,b){ return veinRank(a) - veinRank(b); }
+
+const ORE_WORLDS = [
+  { world: 1, ores: [
+    {name:"Tin Ore",health:10,exp:2.0,floors:"1-2",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:10},
+    {name:"Copper Ore",health:25,exp:5.0,floors:"1-4",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:25},
+    {name:"Mithril Ore",health:60,exp:12.17,floors:"3-6",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:60},
+    {name:"Adamant Ore",health:150,exp:28.79,floors:"5-8",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:150},
+    {name:"Runite Ore",health:375,exp:66.23,floors:"7-10",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:375},
+    {name:"Citrine Ore",health:935,exp:147.91,floors:"9-12",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:935},
+    {name:"Amethyst Ore",health:2335,exp:320.47,floors:"11-14",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:2335},
+    {name:"Topaz Ore",health:5835,exp:672.98,floors:"13-16",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:5835},
+    {name:"Obsidian Ore",health:14590,exp:1370.0,floors:"15-18",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:14590},
+    {name:"Demonite Ore",health:36600,exp:2690.0,floors:"17-18",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:36600},
+    {name:"VR-Tin Ore",health:91150,exp:5110.0,floors:"19-20",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:91150},
+    {name:"VR-Amethyst Ore",health:227880,exp:9370.0,floors:"19-22",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:227880},
+    {name:"VR-Demonite Ore",health:569680,exp:16560.0,floors:"21-24",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:569680},
+    {name:"VR-ERROR Ore",health:1420000,exp:28150.0,floors:"23-24",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:1420000},
+    {name:"Lunarium Ore",health:3560000,exp:45980.0,floors:"25-26",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:3560000},
+    {name:"Earth-C-137 Ore",health:8900000,exp:72040.0,floors:"25-28",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:8900000},
+    {name:"Meteorite Ore",health:22300000,exp:108060.0,floors:"27-30",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:22300000},
+    {name:"Singularity Ore",health:55630000,exp:154890.0,floors:"29-30",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:55630000},
+    {name:"Halium Ore",health:139080000,exp:211690.0,floors:"31-32",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:139080000},
+    {name:"Blasphemite Ore",health:347710000,exp:275190.0,floors:"31-34",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:347710000},
+    {name:"Angelite Ore",health:869270000,exp:339400.0,floors:"33-36",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:869270000},
+    {name:"Elysium Ore",health:2170000000,exp:395970.0,floors:"35-36",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:2170000000},
+    {name:"Enemite Ore",health:5430000000,exp:435570.0,floors:"37-38",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:5430000000},
+    {name:"Beepboopium Ore",health:13580000000,exp:450090.0,floors:"37-40",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:13580000000},
+    {name:"Radion-73 Ore",health:33960000000,exp:450090.0,floors:"39-42",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:33960000000},
+    {name:"Cranium Ore",health:84890000000,exp:450090.0,floors:"41-42",dmgReduction:null,bombReduction:null,critTier:null,info:null,required:84890000000},
+  ]},
+  { world: 2, ores: [
+    {name:"Lapis Ore",health:424450000000,exp:450090.0,floors:"43-44",dmgReduction:null,bombReduction:null,critTier:"Super",info:null,required:424450000000},
+    {name:"Quartz Ore",health:1060000000000,exp:540100.0,floors:"43-46",dmgReduction:50,bombReduction:null,critTier:null,info:null,required:2120000000000},
+    {name:"Glacialite Ore",health:2650000000000,exp:648120.0,floors:"45-48",dmgReduction:null,bombReduction:75,critTier:null,info:null,required:2650000000000},
+    {name:"Twinklestone Ore",health:19900000000000,exp:777750.0,floors:"47-48",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +200%",required:19900000000000},
+    {name:"Sandcasium Ore",health:16580000000000,exp:933300.0,floors:"49-50",dmgReduction:null,bombReduction:75,critTier:null,info:null,required:16580000000000},
+    {name:"Clamite Ore",health:41450000000000,exp:1120000.0,floors:"49-52",dmgReduction:null,bombReduction:null,critTier:"Super",info:null,required:41450000000000},
+    {name:"Thunderstone Ore",health:103620000000000,exp:1340000.0,floors:"51-54",dmgReduction:60,bombReduction:null,critTier:null,info:null,required:259050000000000},
+    {name:"Crabrock Ore",health:1040000000000000,exp:1610000.0,floors:"53-54",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +300%",required:1040000000000000},
+    {name:"Hailstone Ore",health:647660000000000,exp:1940000.0,floors:"55-56",dmgReduction:null,bombReduction:null,critTier:"Ultra",info:null,required:647660000000000},
+    {name:"Frostbite Ore",health:1620000000000000,exp:2320000.0,floors:"55-58",dmgReduction:null,bombReduction:null,critTier:"Ultra",info:null,required:1620000000000000},
+    {name:"Icebloom Ore",health:16190000000000002,exp:2790000.0,floors:"57-60",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +300%",required:16190000000000002},
+    {name:"Pinguinus Ore",health:50600000000000000,exp:3340000.0,floors:"59-60",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +400%",required:50600000000000000},
+    {name:"Macawrock Ore",health:50600000000000000,exp:4010000.0,floors:"61-62",dmgReduction:null,bombReduction:85,critTier:null,info:null,required:50600000000000000},
+    {name:"Cocore Ore",health:126500000000000000,exp:4820000.0,floors:"61-64",dmgReduction:null,bombReduction:null,critTier:"Ultra",info:null,required:126500000000000000},
+    {name:"Rafflenium Ore",health:1900000000000000000,exp:5780000.0,floors:"63-66",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +500%",required:1900000000000000000},
+    {name:"Carnivorian Ore",health:790600000000000000,exp:6930000.0,floors:"65-66",dmgReduction:null,bombReduction:null,critTier:null,info:"Rainbow multi 0.50x",required:790600000000000000},
+    {name:"Infernite Ore",health:1980000000000000000,exp:8320000.0,floors:"67-68",dmgReduction:null,bombReduction:null,critTier:null,info:"Bomb recharge 0.40x",required:1980000000000000000},
+    {name:"Blood-Onyx Ore",health:4940000000000000000,exp:9990000.0,floors:"67-70",dmgReduction:70,bombReduction:null,critTier:null,info:null,required:16466666666666663936},
+    {name:"Cyrogem Ore",health:12350000000000000000,exp:11980000.0,floors:"69-72",dmgReduction:null,bombReduction:null,critTier:null,info:"Golden floor = 50%",required:12350000000000000000},
+    {name:"Pinnaclite Ore",health:30880000000000000000,exp:14380000.0,floors:"71-72",dmgReduction:null,bombReduction:null,critTier:null,info:"Game speed -25%",required:30880000000000000000},
+  ]},
+  { world: 3, ores: [
+    {name:"Omeletite Ore",health:1080000000000000131072,exp:17260000.0,floors:"73-74",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +600%",required:1080000000000000131072},
+    {name:"Resinite Ore",health:386030000000000000000,exp:20710000.0,floors:"73-76",dmgReduction:null,bombReduction:null,critTier:"Ultra",info:null,required:386030000000000000000},
+    {name:"Impactium Ore",health:965080000000000000000,exp:34850000.0,floors:"75-78",dmgReduction:null,bombReduction:null,critTier:null,info:"Golden floor = 50%",required:965080000000000000000},
+    {name:"Tricerastone Ore",health:21710000000000000524288,exp:29820000.0,floors:"77-78",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +800%",required:21710000000000000524288},
+    {name:"Duelysium Ore",health:6030000000000000524288,exp:35780000.0,floors:"79-80",dmgReduction:null,bombReduction:null,critTier:"Ultra",info:null,required:6030000000000000524288},
+    {name:"Arcusite Ore",health:15080000000000000000000,exp:42940000.0,floors:"79-82",dmgReduction:null,bombReduction:null,critTier:null,info:"Bomb recharge 0.30x",required:15080000000000000000000},
+    {name:"Phalanxite Ore",health:37700000000000003145728,exp:51520000.0,floors:"81-84",dmgReduction:null,bombReduction:null,critTier:null,info:"Golden floor = 45%",required:37700000000000003145728},
+    {name:"Guardium Ore",health:94249999999999993184256,exp:61830000.0,floors:"83-84",dmgReduction:85,bombReduction:null,critTier:null,info:null,required:628333333333333153677312},
+    {name:"Cognite Ore",health:235620000000000015728640,exp:74190000.0,floors:"85-87",dmgReduction:null,bombReduction:null,critTier:null,info:"Rainbow multi 0.50x",required:235620000000000015728640},
+    {name:"Telophite Ore",health:589039999999999970639872,exp:89030000.0,floors:"85-89",dmgReduction:null,bombReduction:null,critTier:"Omega",info:null,required:589039999999999970639872},
+    {name:"Steamstone Ore",health:1469999999999999819644928,exp:106840000.0,floors:"87-90",dmgReduction:null,bombReduction:null,critTier:null,info:"Golden Floor = 40%",required:1469999999999999819644928},
+    {name:"Equinine Ore",health:3680000000000000067108864,exp:128210000.00000001,floors:"89-90",dmgReduction:null,bombReduction:null,critTier:null,info:"Game speed -25%",required:3680000000000000067108864},
+    {name:"Dynamite Ore",health:27609999999999998049648640,exp:153850000.0,floors:"91-92",dmgReduction:null,bombReduction:null,critTier:null,info:"Game speed -25%",required:27609999999999998049648640},
+    {name:"Genevium Ore",health:69029999999999997923819520,exp:184620000.0,floors:"91-94",dmgReduction:null,bombReduction:null,critTier:null,info:"Golden floor = 45%",required:69029999999999997923819520},
+    {name:"Manhattite Ore",health:172569999999999992009850880,exp:221540000.0,floors:"93-96",dmgReduction:null,bombReduction:null,critTier:"Omega",info:null,required:172569999999999992009850880},
+    {name:"Rationium Ore",health:3879999999999999930609434624,exp:265850000.00000003,floors:"95-96",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +800%",required:3879999999999999930609434624},
+    {name:"Vaporium Ore",health:1080000000000000140794396672,exp:319020000.0,floors:"97-98",dmgReduction:null,bombReduction:null,critTier:null,info:"Game speed -25%",required:1080000000000000140794396672},
+    {name:"Palmite Ore",health:24269999999999999632545415168,exp:382830000.0,floors:"97-100",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +800%",required:24269999999999999632545415168},
+    {name:"Ransomite Ore",health:6740000000000000743767539712,exp:459390000.0,floors:"99-102",dmgReduction:null,bombReduction:null,critTier:null,info:"Golden floor = 40%",required:6740000000000000743767539712},
+    {name:"MVPD-1988 Ore",health:16850000000000001309663035392,exp:551270000.0,floors:"101-102",dmgReduction:null,bombReduction:null,critTier:null,info:"Rainbow multi 0.40x",required:16850000000000001309663035392},
+  ]},
+  { world: 4, ores: [
+    {name:"Chronite Ore",health:1050000000000000029323105381908480,exp:661520000.0,floors:"103-104",dmgReduction:null,bombReduction:null,critTier:null,info:"Bomb recharge 0.35x",required:1050000000000000029323105381908480},
+    {name:"Hattium Ore",health:2629999999999999620513949051518976,exp:793820000.0,floors:"103-106",dmgReduction:null,bombReduction:null,critTier:null,info:"Portal chance 0.40x",required:2629999999999999620513949051518976},
+    {name:"Pishalvite Ore",health:6579999999999999607297374756536320,exp:952590000.0,floors:"105-108",dmgReduction:null,bombReduction:null,critTier:null,info:"Golden floor = 40%",required:6579999999999999607297374756536320},
+    {name:"Teatimium Ore",health:16499999999999999390221687437918208,exp:1140000000.0,floors:"107-108",dmgReduction:null,bombReduction:null,critTier:null,info:"Item buff drain 2x",required:16499999999999999390221687437918208},
+    {name:"Rumium Ore",health:41099999999999997936080219258486784,exp:1370000000.0,floors:"109-110",dmgReduction:null,bombReduction:null,critTier:null,info:"Rainbow multi 0.40x",required:41099999999999997936080219258486784},
+    {name:"Anchorium Ore",health:103000000000000003041160076216762368,exp:1640000000.0,floors:"109-112",dmgReduction:null,bombReduction:null,critTier:null,info:"Freebie rate 0.40x",required:103000000000000003041160076216762368},
+    {name:"Mateyum Ore",health:257000000000000000424353171255590912,exp:1970000000.0,floors:"111-114",dmgReduction:null,bombReduction:null,critTier:null,info:"Golden floor = 35%",required:257000000000000000424353171255590912},
+    {name:"Hookite Ore",health:642999999999999934452453652587085824,exp:2360000000.0,floors:"113-114",dmgReduction:null,bombReduction:null,critTier:null,info:"Lootbug spawn 0.35x",required:642999999999999934452453652587085824},
+    {name:"Carpetite Ore",health:1610000000000000240958750702090321920,exp:2840000000.0,floors:"115-116",dmgReduction:null,bombReduction:null,critTier:null,info:"G.Ore Multi 0.50x",required:1610000000000000240958750702090321920},
+    {name:"Djinnium Ore",health:4019999999999999571380714729465970688,exp:3400000000.0,floors:"115-118",dmgReduction:null,bombReduction:null,critTier:null,info:"Fuel depletion 2x",required:4019999999999999571380714729465970688},
+    {name:"Sinbadium Ore",health:10000000000000000719354278919532445696,exp:4080000000.0,floors:"117-120",dmgReduction:null,bombReduction:null,critTier:null,info:"Golden floor = 30%",required:10000000000000000719354278919532445696},
+    {name:"Turbanite Ore",health:25100000000000001758355575259329986560,exp:4900000000.0,floors:"119-120",dmgReduction:null,bombReduction:null,critTier:null,info:"Game speed -30%",required:25100000000000001758355575259329986560},
+    {name:"Carriagum Ore",health:5639999999999999895700233160694616293376,exp:5880000000.0,floors:"121-122",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +800%",required:5639999999999999895700233160694616293376},
+    {name:"Crystal-Rose Ore",health:1560000000000000093329801579968480673792,exp:7050000000.0,floors:"121-124",dmgReduction:null,bombReduction:null,critTier:null,info:"Game Speed -40%",required:1560000000000000093329801579968480673792},
+    {name:"Frogstone Ore",health:3919999999999999413071444488441999392768,exp:8470000000.000001,floors:"123-126",dmgReduction:null,bombReduction:null,critTier:null,info:"Prismatic Chance -15%",required:3919999999999999413071444488441999392768},
+    {name:"Slipperite Ore",health:9799999999999999741604430835734173188096,exp:10200000000.0,floors:"125-126",dmgReduction:null,bombReduction:null,critTier:null,info:"Bomb recharge 0.35x",required:9799999999999999741604430835734173188096},
+    {name:"Jellystone Ore",health:219999999999999989758331150789272225710080,exp:12200000000.0,floors:"127-128",dmgReduction:null,bombReduction:null,critTier:null,info:"Health +800%",required:219999999999999989758331150789272225710080},
+    {name:"Lollipopite Ore",health:61299999999999994596564178373611138056192,exp:14600000000.0,floors:"127-130",dmgReduction:null,bombReduction:null,critTier:null,info:"Golden floor = 30%",required:61299999999999994596564178373611138056192},
+    {name:"Mintium Ore",health:152999999999999997273478735283918137720832,exp:17600000000.0,floors:"129-132",dmgReduction:null,bombReduction:null,critTier:null,info:"Portal chance 0.40x",required:152999999999999997273478735283918137720832},
+    {name:"Neopolium Ore",health:383000000000000000633779930261114952089600,exp:21000000000.0,floors:"131-132",dmgReduction:null,bombReduction:null,critTier:null,info:"Freebie rate 0.40x",required:383000000000000000633779930261114952089600},
+  ]},
+];
+
+const DATA_VERSION = 6;
+let state = {
+  stars: DEFAULT_STARS,
+  shared: Object.fromEntries(SHARED_DEFS.map(d=>[d.id,0])),
+  telescope: Object.fromEntries(TELESCOPE_UPGRADES.map(u=>[u.name,0])),
+  hideCompleted: false,
+  telescopeHideCompleted: false,
+  hourlyGain: '',
+  spooning: false,
+  critDamage: '',
+  bombDamage: '',
+  hiddenWorlds: {},
+  statueDone: {},
+  statueDataVersion: STATUE_DATA_VERSION,
+  collapsedPanels: {},
+  version: DATA_VERSION
+};
+let saveTimer = null;
+
+function normalizeTelescope(){
+  if(!state.telescope) state.telescope = {};
+  TELESCOPE_UPGRADES.forEach(u=>{ if(state.telescope[u.name] === undefined) state.telescope[u.name] = 0; });
+}
+
+function sharedInputMax(def){ return def.perLevel ? def.levels : def.value; }
+
+function migrate(oldData){
+  const byName = {};
+  (oldData.stars||[]).forEach(s=>{ if(s && s.name) byName[s.name] = s; });
+
+  const shared = {};
+  SHARED_DEFS.forEach(def=>{
+    let best = 0;
+    // Previously-shared sources: carry over from the old top-level shared object by id.
+    if(oldData.shared && typeof oldData.shared[def.id] === 'number'){
+      best = oldData.shared[def.id];
+    }
+    // Previously star-specific sources (or as a fallback): look inside each applicable
+    // star's old per-star capSources array for a matching label.
+    def.appliesTo.forEach(starName=>{
+      const old = byName[starName];
+      if(old && Array.isArray(old.capSources)){
+        const match = old.capSources.find(c=>c && c.label===def.label);
+        if(match){
+          const g = typeof match.got==='number' ? match.got : (match.on ? match.value : 0);
+          best = Math.max(best, g||0);
+        }
+      }
+    });
+    shared[def.id] = Math.max(0, Math.min(sharedInputMax(def), best));
+  });
+  // "Gilded Mining Skill" was an earlier naming mistake for Mining Game Skill.
+  if(oldData.shared && typeof oldData.shared.gildedMining === 'number' && shared.miningGameSkill !== undefined){
+    shared.miningGameSkill = Math.max(shared.miningGameSkill, Math.min(sharedInputMax(SHARED_DEFS.find(d=>d.id==='miningGameSkill')), oldData.shared.gildedMining));
+  }
+
+  const stars = DEFAULT_STARS.map(def=>{
+    const fresh = JSON.parse(JSON.stringify(def));
+    const old = byName[fresh.name];
+    if(old){
+      if(old.level !== undefined && old.level !== null && old.level !== '') fresh.level = old.level;
+      if(old.stock !== undefined && old.stock !== null && old.stock !== '') fresh.stock = old.stock;
+      if(old.extra !== undefined && old.extra !== null) fresh.extra = old.extra;
+      if(old.excludeTotal !== undefined) fresh.excludeTotal = !!old.excludeTotal;
+    }
+    return fresh;
+  });
+
+  const telescope = Object.fromEntries(TELESCOPE_UPGRADES.map(u=>{
+    const old = oldData.telescope && typeof oldData.telescope[u.name] === 'number' ? oldData.telescope[u.name] : 0;
+    return [u.name, Math.max(0, Math.min(u.maxLevel, old))];
+  }));
+
+  return { stars, shared, telescope, hideCompleted: !!oldData.hideCompleted, telescopeHideCompleted: !!oldData.telescopeHideCompleted, hourlyGain: oldData.hourlyGain || '', spooning: !!oldData.spooning, critDamage: oldData.critDamage || oldData.oreDamage || '', bombDamage: oldData.bombDamage || '', hiddenWorlds: oldData.hiddenWorlds || {}, statueDone: (oldData.statueDataVersion === STATUE_DATA_VERSION) ? (oldData.statueDone || {}) : {}, statueDataVersion: STATUE_DATA_VERSION, collapsedPanels: oldData.collapsedPanels || {}, version: DATA_VERSION };
+}
+
+const SUFFIX_PARSE = {'':1, k:1e3, m:1e6, b:1e9, t:1e12, q:1e15, qi:1e18, sx:1e21, sp:1e24, oc:1e27, no:1e30, dc:1e33, udc:1e36, ddc:1e39};
+
+function fmt(n){
+  if(!isFinite(n)) return '0';
+  n = Math.round(n);
+  const abs = Math.abs(n);
+  const units = ['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','Udc','Ddc'];
+  if(abs < 1000) return n.toLocaleString();
+  let tier = Math.min(Math.floor(Math.log10(abs)/3), units.length-1);
+  let scaled = n / Math.pow(1000,tier);
+  return scaled.toFixed(scaled < 10 ? 2 : (scaled < 100 ? 1 : 0)) + units[tier];
+}
+
+function parseAbbrev(str){
+  if(str === null || str === undefined) return 0;
+  let s = String(str).trim().toLowerCase().replace(/,/g,'');
+  if(s === '') return 0;
+  const m = s.match(/^(-?\d+(?:\.\d+)?)\s*(ddc|udc|dc|no|oc|sp|sx|qi|q|k|m|b|t)?$/);
+  if(!m){ const n = parseFloat(s); return isNaN(n) ? 0 : n; }
+  const num = parseFloat(m[1]);
+  const mult = SUFFIX_PARSE[m[2]||''];
+  return num * mult;
+}
+function toAbbrev(n){
+  n = Number(n) || 0;
+  const abs = Math.abs(n);
+  const units = [['ddc',1e39],['udc',1e36],['dc',1e33],['no',1e30],['oc',1e27],['sp',1e24],['sx',1e21],['qi',1e18],['q',1e15],['t',1e12],['b',1e9],['m',1e6],['k',1e3]];
+  for(const [suf,mult] of units){
+    if(abs >= mult){
+      const scaled = n / mult;
+      const rounded = Math.round(scaled * 100) / 100;
+      return (rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toString()) + suf;
+    }
+  }
+  return String(Math.round(n));
+}
+
+// Accepts either a plain number/abbreviation ("490k") or a multiplication formula ("1400x350")
+// Full expression support: numbers (with k/m/b/... suffixes), + - * / x, and parentheses.
+// e.g. "1541x(383+390.5)", "1400*350", "490k", "(1.2m+300k)x2"
+// Formats a number of hours into a compact human duration, e.g. "3d 5h", "45m", "2y 130d".
+function formatDuration(hours){
+  if(hours === null || hours === undefined || !isFinite(hours)) return '\u221e';
+  if(hours <= 0) return '0m';
+  let h = hours;
+  const years = Math.floor(h/8760); h -= years*8760;
+  const days = Math.floor(h/24); h -= days*24;
+  const hrs = Math.floor(h); h -= hrs;
+  let mins = Math.round(h*60);
+  if(years===0 && days===0 && hrs===0 && mins===0) mins = 1; // don't show "0m" for a genuinely nonzero duration
+  const parts = [];
+  if(years>0) parts.push(years+'y');
+  if(days>0 || years>0) parts.push(days+'d');
+  if(hrs>0 || days>0 || years>0) parts.push(hrs+'h');
+  if(years===0 && days===0) parts.push(mins+'m');
+  return parts.join(' ') || '0m';
+}
+
+function parseDamageInput(str){
+  if(str === null || str === undefined) return 0;
+  const s = String(str).trim().toLowerCase();
+  if(s === '') return 0;
+
+  const NUM_RE = /\d+(?:\.\d+)?(?:ddc|udc|dc|no|oc|sp|sx|qi|q|k|m|b|t)?/y;
+  const tokens = [];
+  let i = 0;
+  while(i < s.length){
+    const ch = s[i];
+    if(ch === ' '){ i++; continue; }
+    if('()+-*/x'.includes(ch)){
+      tokens.push(ch); i++; continue;
+    }
+    NUM_RE.lastIndex = i;
+    const m = NUM_RE.exec(s);
+    if(m && m.index === i){ tokens.push(m[0]); i += m[0].length; continue; }
+    i++; // skip anything unrecognized rather than fail outright
+  }
+
+  let pos = 0;
+  const peek = ()=> tokens[pos];
+  const next = ()=> tokens[pos++];
+
+  function parsePrimary(){
+    const tok = peek();
+    if(tok === '('){ next(); const v = parseExpr(); if(peek()===')') next(); return v; }
+    if(tok === '+'){ next(); return parsePrimary(); }
+    if(tok === '-'){ next(); return -parsePrimary(); }
+    if(tok === undefined) return 0;
+    next();
+    return parseAbbrev(tok);
+  }
+  function parseTerm(){
+    let v = parsePrimary();
+    while(peek()==='*' || peek()==='x' || peek()==='/'){
+      const op = next();
+      const rhs = parsePrimary();
+      v = op==='/' ? v/rhs : v*rhs;
+    }
+    return v;
+  }
+  function parseExpr(){
+    let v = parseTerm();
+    while(peek()==='+' || peek()==='-'){
+      const op = next();
+      const rhs = parseTerm();
+      v = op==='+' ? v+rhs : v-rhs;
+    }
+    return v;
+  }
+
+  const result = parseExpr();
+  return isFinite(result) ? result : 0;
+}
+
+function sharedMaxFor(def, starName){
+  if(def.perLevel) return (def.perLevel[starName]||0) * def.levels;
+  return def.value;
+}
+function sharedContribFor(def, starName, got){
+  if(def.perLevel){
+    const lvl = Math.max(0, Math.min(def.levels, Number(got)||0));
+    return lvl * (def.perLevel[starName]||0);
+  }
+  return Math.max(0, Math.min(def.value, Number(got)||0));
+}
+function targetFor(star){
+  return (Number(star.baseLevel)||0) + SHARED_DEFS.reduce((sum,def)=>{
+    if(!def.appliesTo.includes(star.name)) return sum;
+    return sum + sharedContribFor(def, star.name, Number(state.shared[def.id])||0);
+  },0);
+}
+function ceilingFor(star){
+  return (Number(star.baseLevel)||0) + SHARED_DEFS.reduce((sum,def)=>
+    def.appliesTo.includes(star.name) ? sum+sharedMaxFor(def, star.name) : sum, 0);
+}
+
+// Specific costs (and, from that level on, growth-rate changes) that break from the
+// smooth exponential curve, straight from the wiki's CostTable data.
+const STAR_OVERRIDES = {
+  "Gemini":    {overrideLevel:{29:352e9, 35:39e12}, overrideScaling:{35:1.3}},
+  "Scorpio":   {overrideLevel:{53:3.48e9, 109:36.8e12, 114:84.3e12}, overrideScaling:{53:1.18}},
+  "Capricorn": {overrideLevel:{24:136e6, 34:59.9e9, 44:313e9, 46:436e9, 47:515e9}, overrideScaling:{34:1.18}},
+  "Ophiuchus": {overrideLevel:{9:715e6}, overrideScaling:{9:1.25}},
+  "Orion":     {overrideLevel:{39:82.6e9}, overrideScaling:{39:1.3}},
+  "Hercules":  {overrideLevel:{36:374357984197}, overrideScaling:{36:1.3}},
+  "Draco":     {overrideLevel:{26:66.2e9, 31:25e12}, overrideScaling:{}},
+  "Cetus":     {overrideLevel:{23:2.48e9}, overrideScaling:{}},
+};
+// Builds a 1-indexed array where arr[lvl] = cost to reach `lvl` from `lvl-1`, chaining
+// forward from the nearest known anchor (an override or the base cost) using whichever
+// growth rate is currently active - exactly mirrors the Telescope Upgrades approach.
+function buildStarCostArray(baseCost, mult, maxLen, overrides){
+  const ol = (overrides && overrides.overrideLevel) || {};
+  const os = (overrides && overrides.overrideScaling) || {};
+  const arr = new Array(maxLen+1);
+  let currentMult = mult;
+  let last = null;
+  // Start at level 2: level 1 is the free starting level, so the first real cost
+  // (matching the wiki's "Level 2" column) belongs at arr[2], not arr[1].
+  for(let lvl=2; lvl<=maxLen; lvl++){
+    if(os[lvl] !== undefined) currentMult = os[lvl];
+    let cost;
+    if(ol[lvl] !== undefined) cost = ol[lvl];
+    else if(last === null) cost = baseCost;
+    else cost = last * currentMult;
+    arr[lvl] = cost;
+    last = cost;
+  }
+  return arr;
+}
+const _starCostArrayCache = {};
+function getStarCostArray(star){
+  if(_starCostArrayCache[star.id]) return _starCostArrayCache[star.id];
+  const overrides = STAR_OVERRIDES[star.name];
+  const maxLen = Math.max(1, ceilingFor(star));
+  const arr = buildStarCostArray(Number(star.baseCost)||0, Number(star.mult)||1, maxLen, overrides);
+  _starCostArrayCache[star.id] = arr;
+  return arr;
+}
+
+// Regular Stockpile plus whatever the free-form "Extra" expression resolves to
+// (e.g. "25b+350m" for a couple of separate bonus grants).
+function costToLevel(star, targetLevel){
+  const cur = Math.max(Number(star.level)||1, 1);
+  const target = Math.max(targetLevel, cur);
+  if(target <= cur) return 0;
+  const arr = getStarCostArray(star);
+  let total = 0;
+  for(let lvl=cur+1; lvl<=target; lvl++){
+    total += arr[lvl] || 0;
+  }
+  return Math.max(total - (Number(star.stock)||0), 0);
+}
+// Cost of just the single next level up (not the full remaining total).
+function nextLevelCost(star, ceiling){
+  const cur = Math.max(Number(star.level)||1, 1);
+  if(cur >= ceiling) return null;
+  return costToLevel(star, cur+1);
+}
+// Hours until the star's next level, or until it hits target. null = already there,
+// Infinity = there's a cost left but no hourly gain set to ever earn it.
+function currentHourlyGain(){
+  const base = parseAbbrev(state.hourlyGain||'');
+  return state.spooning ? base * 1.25 : base;
+}
+function hoursToNext(star, ceiling){
+  const cost = nextLevelCost(star, ceiling);
+  if(cost === null) return null;
+  const gain = currentHourlyGain();
+  return gain > 0 ? cost/gain : Infinity;
+}
+function hoursToMax(star, target){
+  const remaining = costToLevel(star, target);
+  if(remaining <= 0) return null;
+  const gain = currentHourlyGain();
+  return gain > 0 ? remaining/gain : Infinity;
+}
+// Time to farm the "Extra" one-off amount - entirely separate from leveling.
+function hoursForExtra(star){
+  const amt = parseDamageInput(star.extra||'');
+  if(amt <= 0) return 0;
+  const gain = currentHourlyGain();
+  return gain > 0 ? amt/gain : Infinity;
+}
+
+// Cost to go from one level to another, ignoring the star's current level/stockpile
+// (used to measure cumulative spend rather than remaining cost).
+function costBetweenLevels(star, fromLevel, toLevel){
+  fromLevel = Math.max(1, fromLevel);
+  toLevel = Math.max(fromLevel, toLevel);
+  if(toLevel <= fromLevel) return 0;
+  const arr = getStarCostArray(star);
+  let total = 0;
+  for(let lvl=fromLevel+1; lvl<=toLevel; lvl++){
+    total += arr[lvl] || 0;
+  }
+  return total;
+}
+// Progress bar fill: fraction of TOTAL cost (base level -> target) already spent
+// getting from base level to the current level - not a simple level-count ratio,
+// since later levels cost exponentially more.
+function spendProgressPct(star, target){
+  const cur = Math.max(Number(star.level)||1, 1);
+  const totalToTarget = costBetweenLevels(star, 1, target);
+  if(totalToTarget <= 0) return 0;
+  const spentSoFar = costBetweenLevels(star, 1, cur);
+  return Math.max(0, Math.min(100, (spentSoFar/totalToTarget)*100));
+}
+
+function applyCollapsedPanels(){
+  document.querySelectorAll('.collapse-toggle[data-panel-key]').forEach(btn=>{
+    const key = btn.dataset.panelKey;
+    const panel = btn.closest('.panel');
+    panel.classList.toggle('collapsed', !!(state.collapsedPanels && state.collapsedPanels[key]));
+  });
+}
+function initCollapsiblePanels(){
+  document.querySelectorAll('.collapse-toggle[data-panel-key]').forEach(btn=>{
+    const key = btn.dataset.panelKey;
+    btn.addEventListener('click', ()=>{
+      const panel = btn.closest('.panel');
+      const nowCollapsed = !panel.classList.contains('collapsed');
+      panel.classList.toggle('collapsed', nowCollapsed);
+      if(!state.collapsedPanels) state.collapsedPanels = {};
+      state.collapsedPanels[key] = nowCollapsed;
+      scheduleSave();
+    });
+  });
+  applyCollapsedPanels();
+}
+
+function render(){
+  renderSummary();
+  renderShared();
+  renderExtraStars();
+  renderStars();
+  renderTelescopeSummary();
+  renderVeinTotals();
+  renderTelescopeGrid();
+  renderOreWorlds();
+  renderStatue();
+}
+
+function refreshCard(card, s){
+  const lvl = Number(s.level)||0;
+  const tgt = targetFor(s);
+  const ceil = ceilingFor(s);
+  const pc = spendProgressPct(s, tgt);
+  const isMaxed = tgt>0 && lvl>=tgt;
+  card.querySelector('.clevel').innerHTML = `Level <b>${lvl}</b> / ${tgt} <span style="opacity:.6">(base ${s.baseLevel}, ceiling ${ceil})</span>`;
+  card.querySelector('.bar-fill').style.width = pc+'%';
+  card.className = 'card' + (isMaxed?' maxed':'');
+  const needEl = card.querySelector('.need');
+  needEl.className = 'need' + (isMaxed?' done':'');
+  const rem = costToLevel(s, tgt);
+  needEl.innerHTML = `<span>${isMaxed?'At target':'Stars still needed'}</span><b>${isMaxed?'\u2713':fmt(rem)}</b>`;
+  const nextCost = nextLevelCost(s, ceil);
+  const nextEl = card.querySelector('.next-level');
+  if(nextEl) nextEl.querySelector('b').textContent = nextCost===null ? '\u2014' : fmt(nextCost);
+  const timeToNext = hoursToNext(s, ceil);
+  const timeNextEl = card.querySelector('.time-next');
+  if(timeNextEl) timeNextEl.querySelector('b').textContent = timeToNext===null ? '\u2014' : formatDuration(timeToNext);
+  const timeToMax = hoursToMax(s, tgt);
+  const timeMaxEl = card.querySelector('.time-max');
+  if(timeMaxEl) timeMaxEl.querySelector('b').textContent = timeToMax===null ? '\u2713' : formatDuration(timeToMax);
+  const gaugeWrap = card.querySelector('.gauge');
+  gaugeWrap.outerHTML = starGaugeSVG(pc, isMaxed);
+  const lvlInput = card.querySelector('[data-field="level"]');
+  if(lvlInput && document.activeElement !== lvlInput) lvlInput.value = s.level;
+}
+function updateStarDisplay(card, s){
+  refreshCard(card, s);
+  renderSummary();
+}
+function reapplyHideFilter(){
+  if(state.hideCompleted) renderStars();
+}
+
+function renderSummary(){
+  const totalRemaining = state.stars.reduce((sum,s)=>sum + costToLevel(s, targetFor(s)), 0);
+  const maxedCount = state.stars.filter(s=>(Number(s.level)||0) >= targetFor(s)).length;
+  const times = state.stars
+    .filter(s => (Number(s.level)||0) > 0 && !s.excludeTotal) // level 0 = not unlocked yet; excludeTotal = manually skipped
+    .map(s=>{
+      const t = hoursToMax(s, targetFor(s));
+      return (t===null ? 0 : t) + hoursForExtra(s);
+    });
+  // Sum, not max: only one star is farmed at a time, so total time is sequential.
+  const timeToMaxAll = times.reduce((a,b)=>a+b, 0);
+  const el = document.getElementById('summary');
+  el.innerHTML = `
+    <div class="stat"><div class="label">Stars tracked</div><div class="value">${state.stars.length}</div></div>
+    <div class="stat"><div class="label">At target</div><div class="value">${maxedCount} / ${state.stars.length}</div></div>
+    <div class="stat"><div class="label">Total left to target</div><div class="value">${fmt(totalRemaining)}</div></div>
+    <div class="stat"><div class="label">Time to max all stars</div><div class="value">${formatDuration(timeToMaxAll)}</div></div>
+  `;
+}
+
+function renderShared(){
+  const el = document.getElementById('sharedGrid');
+  el.innerHTML = '';
+  SHARED_DEFS.forEach(def=>{
+    const maxInput = sharedInputMax(def);
+    const got = Math.max(0, Math.min(maxInput, Number(state.shared[def.id])||0));
+    const full = got >= maxInput;
+    const item = document.createElement('div');
+    item.className = 'shared-item' + (full ? ' full' : '');
+    const appliesText = def.perLevel
+      ? def.appliesTo.map(n=>`${n} +${def.perLevel[n]}/lvl`).join(' · ')
+      : def.appliesTo.join(', ');
+    item.innerHTML = `
+      <div class="slabel">${def.label}</div>
+      <div class="sapplies">${appliesText}</div>
+      <div class="sinput-row">
+        <input class="shared-got" type="number" min="0" max="${maxInput}" step="1" value="${got}"/>
+        <span class="smax">/ ${maxInput}${def.perLevel ? ' levels' : ''}</span>
+      </div>
+    `;
+    const sharedInp = item.querySelector('.shared-got');
+    sharedInp.addEventListener('input', e=>{
+      let v = parseFloat(e.target.value);
+      if(isNaN(v)) v = 0;
+      v = Math.max(0, Math.min(maxInput, v));
+      state.shared[def.id] = v;
+      item.classList.toggle('full', v >= maxInput);
+      renderStars();
+      renderSummary();
+    });
+    sharedInp.addEventListener('change', ()=>{ scheduleSave(); reapplyHideFilter(); });
+    el.appendChild(item);
+  });
+}
+
+function extraResolvedText(s){
+  if(!s.extra) return '';
+  const amt = parseDamageInput(s.extra);
+  const hrs = hoursForExtra(s);
+  const timePart = hrs>0 ? ' ('+formatDuration(hrs)+')' : '';
+  return '= '+fmt(amt)+timePart;
+}
+function renderExtraStars(){
+  const el = document.getElementById('extraStarsGrid');
+  el.innerHTML = '';
+  state.stars.forEach(s=>{
+    const item = document.createElement('div');
+    item.className = 'extra-item' + (s.extra ? ' set' : '');
+    item.innerHTML = `
+      <div class="slabel">${s.name}</div>
+      <input class="extra-star-input" type="text" inputmode="text" value="${s.extra||''}" placeholder="e.g. 25b+350m"/>
+      <div class="resolved">${extraResolvedText(s)}</div>
+    `;
+    const inp = item.querySelector('.extra-star-input');
+    inp.addEventListener('input', e=>{
+      s.extra = e.target.value;
+      item.classList.toggle('set', !!s.extra);
+      item.querySelector('.resolved').textContent = extraResolvedText(s);
+      renderStars(); // only the star grid needs updating; this input lives in a different panel
+      renderSummary();
+    });
+    inp.addEventListener('change', ()=>{ scheduleSave(); reapplyHideFilter(); });
+    el.appendChild(item);
+  });
+}
+
+function starGaugeSVG(pct, maxed){
+  const clipH = 100 - Math.max(0,Math.min(100,pct));
+  const fillColor = maxed ? '#7be0a8' : '#f4c95d';
+  return `<svg class="gauge" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="20,2 25,15 39,15 27.5,23 32,37 20,28 8,37 12.5,23 1,15 15,15"
+      fill="none" stroke="#3a4576" stroke-width="1.5"/>
+    <polygon points="20,2 25,15 39,15 27.5,23 32,37 20,28 8,37 12.5,23 1,15 15,15"
+      fill="${fillColor}" opacity="0.85"
+      style="clip-path:inset(${clipH}% 0 0 0);"/>
+  </svg>`;
+}
+
+function renderStars(){
+  const el = document.getElementById('starGrid');
+  el.innerHTML = '';
+  state.stars.forEach(s=>{
+    const level = Number(s.level)||0;
+    const target = targetFor(s);
+    const ceiling = ceilingFor(s);
+    const maxed = target>0 && level>=target;
+
+    if(state.hideCompleted && maxed) return;
+
+    const pct = spendProgressPct(s, target);
+    const remaining = costToLevel(s, target);
+    const nextCost = nextLevelCost(s, ceiling);
+    const timeToNext = hoursToNext(s, ceiling);
+    const timeToMax = hoursToMax(s, target);
+
+    const card = document.createElement('div');
+    card.className = 'card' + (maxed ? ' maxed' : '') + (s.excludeTotal ? ' excluded-from-total' : '');
+    card.innerHTML = `
+      <button class="remove-btn" title="Remove star">&times;</button>
+      <div class="card-top">
+        ${starGaugeSVG(pct, maxed)}
+        <div style="flex:1;min-width:0;">
+          <input class="cname" value="${s.name}" data-field="name" />
+          <div class="clevel">Level <b>${level}</b> / ${target} <span style="opacity:.6">(base ${s.baseLevel}, ceiling ${ceiling})</span></div>
+        </div>
+      </div>
+      <div class="perk">${s.perk || ''}</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Level</label>
+          <div class="stepper">
+            <button type="button" class="step-btn" data-step="-1">&minus;</button>
+            <input type="number" value="${s.level}" data-field="level"/>
+            <button type="button" class="step-btn" data-step="1">+</button>
+          </div>
+        </div>
+        <div class="field"><label>Stockpile</label><input type="text" inputmode="decimal" value="${s.stock ? toAbbrev(s.stock) : (s.stock===0?'0':'')}" data-field="stock" placeholder="e.g. 15m"/></div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;"></div></div>
+      <div class="need ${maxed?'done':''}">
+        <span>${maxed ? 'At target' : 'Stars still needed'}</span>
+        <b>${maxed?'\u2713':fmt(remaining)}</b>
+      </div>
+      <div class="need next-level">
+        <span>Next level</span>
+        <b>${nextCost===null?'\u2014':fmt(nextCost)}</b>
+      </div>
+      <div class="need time-next">
+        <span>Time to next level</span>
+        <b>${timeToNext===null?'\u2014':formatDuration(timeToNext)}</b>
+      </div>
+      <div class="need time-max">
+        <span>Time to max</span>
+        <b>${timeToMax===null?'\u2713':formatDuration(timeToMax)}</b>
+      </div>
+      <label class="toggle-row count-toggle"><input type="checkbox" class="count-toggle-input" ${s.excludeTotal?'':'checked'}/> Count toward "Time to max all stars"</label>
+    `;
+    card.querySelector('.remove-btn').addEventListener('click', ()=>{
+      state.stars = state.stars.filter(x=>x.id!==s.id);
+      scheduleSave(); render();
+    });
+    card.querySelector('.count-toggle-input').addEventListener('change', e=>{
+      s.excludeTotal = !e.target.checked;
+      card.classList.toggle('excluded-from-total', s.excludeTotal);
+      renderSummary();
+      scheduleSave();
+    });
+    const nameInp = card.querySelector('[data-field="name"]');
+    nameInp.addEventListener('input', e=>{ s.name = e.target.value; });
+    nameInp.addEventListener('change', ()=> scheduleSave());
+
+    const levelInp = card.querySelector('[data-field="level"]');
+    levelInp.addEventListener('input', e=>{ s.level = e.target.value; updateStarDisplay(card, s); });
+    levelInp.addEventListener('change', ()=>{ scheduleSave(); reapplyHideFilter(); });
+
+    card.querySelectorAll('.step-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const dir = Number(btn.dataset.step);
+        const ceil = ceilingFor(s);
+        let v = (Number(s.level)||1) + dir;
+        v = Math.max(1, Math.min(ceil, v));
+        s.level = v;
+        levelInp.value = v;
+        updateStarDisplay(card, s);
+        scheduleSave();
+        reapplyHideFilter();
+      });
+    });
+
+    const stockInp = card.querySelector('[data-field="stock"]');
+    stockInp.addEventListener('input', e=>{
+      s.stock = parseAbbrev(e.target.value);
+      updateStarDisplay(card, s);
+    });
+    stockInp.addEventListener('change', ()=>{ scheduleSave(); reapplyHideFilter(); });
+    stockInp.addEventListener('blur', e=>{ e.target.value = s.stock ? toAbbrev(s.stock) : (s.stock===0?'0':''); });
+
+    el.appendChild(card);
+  });
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>trySave(0), 400);
+}
+
+async function trySave(attempt){
+  const warn = document.getElementById('saveWarn');
+  try{
+    await window.storage.set('stargazing-data', JSON.stringify(state), false);
+    if(warn) warn.style.display = 'none';
+  }catch(err){
+    if(attempt < 3){
+      setTimeout(()=>trySave(attempt+1), 1000 * Math.pow(2, attempt));
+    } else {
+      console.error('save failed after retries', err);
+      if(warn) warn.style.display = 'block';
+    }
+  }
+}
+
+document.getElementById('retrySaveBtn').addEventListener('click', ()=>trySave(0));
+
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'stargazing-backup.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('restoreBtn').addEventListener('click', ()=>{
+  document.getElementById('restoreFile').click();
+});
+document.getElementById('restoreFile').addEventListener('change', e=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const parsed = JSON.parse(ev.target.result);
+      if(!parsed || !Array.isArray(parsed.stars)) throw new Error('not a valid backup file');
+      if(parsed.version === DATA_VERSION && parsed.stars.length === DEFAULT_STARS.length){
+        state = parsed;
+        if(!state.shared) state.shared = {};
+        SHARED_DEFS.forEach(d=>{ if(state.shared[d.id] === undefined) state.shared[d.id] = 0; });
+        normalizeTelescope();
+        if(state.critDamage === undefined) state.critDamage = '';
+        if(state.bombDamage === undefined) state.bombDamage = '';
+        if(state.hourlyGain === undefined) state.hourlyGain = '';
+        if(state.spooning === undefined) state.spooning = false;
+        if(!state.hiddenWorlds) state.hiddenWorlds = {};
+        if(!state.collapsedPanels) state.collapsedPanels = {};
+        if(state.statueDataVersion !== STATUE_DATA_VERSION){
+          state.statueDone = {};
+          state.statueDataVersion = STATUE_DATA_VERSION;
+        } else if(!state.statueDone){
+          state.statueDone = {};
+        }
+      } else {
+        state = migrate(parsed);
+      }
+      document.getElementById('hideCompleted').checked = !!state.hideCompleted;
+      document.getElementById('telescopeHideCompleted').checked = !!state.telescopeHideCompleted;
+      globalHourlyGainEl.value = state.hourlyGain || '';
+  document.getElementById('spooningToggle').checked = !!state.spooning;
+      critDamageInputEl.value = state.critDamage || '';
+      bombDamageInputEl.value = state.bombDamage || '';
+      applyCollapsedPanels();
+      const resolvedVal2 = currentOreDamage();
+      damageResolvedEl.textContent = resolvedVal2>0 ? fmt(resolvedVal2) : '';
+      render();
+      scheduleSave();
+    }catch(err){
+      alert("That file doesn't look like a valid backup: " + err.message);
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('hideCompleted').addEventListener('change', e=>{
+  state.hideCompleted = e.target.checked;
+  scheduleSave();
+  renderStars();
+});
+
+document.getElementById('telescopeHideCompleted').addEventListener('change', e=>{
+  state.telescopeHideCompleted = e.target.checked;
+  scheduleSave();
+  renderTelescopeGrid();
+});
+
+// ---- Telescope Upgrades ----
+function telescopeRemaining(u){
+  const lvl = Math.max(0, Math.min(u.maxLevel, Number(state.telescope[u.name])||0));
+  const perLevel = [];
+  let total = 0;
+  for(let i=lvl; i<u.maxLevel; i++){
+    const cost = u.costs[i];
+    const type = u.types[i];
+    perLevel.push({ level: i+1, cost, type });
+    total += cost;
+  }
+  return { lvl, perLevel, total, done: lvl >= u.maxLevel };
+}
+
+function renderTelescopeSummary(){
+  const el = document.getElementById('telescopeSummary');
+  const maxedCount = TELESCOPE_UPGRADES.filter(u=>telescopeRemaining(u).done).length;
+  el.innerHTML = `
+    <div class="stat"><div class="label">Upgrades tracked</div><div class="value">${TELESCOPE_UPGRADES.length}</div></div>
+    <div class="stat"><div class="label">Maxed</div><div class="value">${maxedCount} / ${TELESCOPE_UPGRADES.length}</div></div>
+  `;
+}
+
+function renderVeinTotals(){
+  const el = document.getElementById('veinTotalsGrid');
+  const totals = {};
+  TELESCOPE_UPGRADES.forEach(u=>{
+    const { perLevel } = telescopeRemaining(u);
+    perLevel.forEach(({type,cost})=>{ totals[type] = (totals[type]||0) + cost; });
+  });
+  const entries = Object.entries(totals).sort((a,b)=>veinCompare(a[0],b[0]));
+  if(entries.length===0){
+    el.innerHTML = `<div class="vein-empty">All upgrades maxed — nothing left to gather.</div>`;
+    return;
+  }
+  el.innerHTML = entries.map(([type,amt])=>`
+    <div class="shared-item">
+      <div class="slabel">${type}</div>
+      <div class="sapplies" style="font-family:'Spectral',serif;font-size:15px;color:var(--gold);">${fmt(amt)}</div>
+    </div>
+  `).join('');
+}
+
+function perLevelListHtml(perLevel){
+  if(!perLevel.length) return '';
+  return `<div class="vein-list">${perLevel.map(({level,cost,type})=>`
+    <div class="vein-row"><span>Lv ${level}: ${type}</span><span>${fmt(cost)}</span></div>
+  `).join('')}</div>`;
+}
+
+function reapplyTelescopeHideFilter(){
+  if(state.telescopeHideCompleted) renderTelescopeGrid();
+}
+
+function renderTelescopeGrid(){
+  const el = document.getElementById('telescopeGrid');
+  el.innerHTML = '';
+  TELESCOPE_UPGRADES.forEach(u=>{
+    const { lvl, perLevel, total, done } = telescopeRemaining(u);
+    if(state.telescopeHideCompleted && done) return;
+
+    const pct = u.maxLevel ? Math.max(0,Math.min(100,(lvl/u.maxLevel)*100)) : 0;
+    const card = document.createElement('div');
+    card.className = 'card' + (done ? ' maxed' : '');
+    card.innerHTML = `
+      <div class="upg-name">${u.name}</div>
+      <div class="upg-level">Level <b>${lvl}</b> / ${u.maxLevel}</div>
+      <div class="stepper">
+        <button type="button" class="step-btn" data-step="-1">&minus;</button>
+        <input type="number" min="0" max="${u.maxLevel}" value="${lvl}" data-tele-level/>
+        <button type="button" class="step-btn" data-step="1">+</button>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;"></div></div>
+      <div class="need ${done?'done':''}">
+        <span>${done ? 'Maxed' : 'Total remaining'}</span>
+        <b>${done?'\u2713':fmt(total)}</b>
+      </div>
+      ${perLevelListHtml(perLevel)}
+    `;
+    const levelInp = card.querySelector('[data-tele-level]');
+    function commitLevel(v){
+      v = Math.max(0, Math.min(u.maxLevel, v));
+      state.telescope[u.name] = v;
+      refreshTelescopeCard(card, u);
+      renderTelescopeSummary();
+      renderVeinTotals();
+    }
+    levelInp.addEventListener('input', e=>{
+      let v = parseInt(e.target.value, 10);
+      if(isNaN(v)) v = 0;
+      commitLevel(v);
+    });
+    levelInp.addEventListener('change', ()=>{ scheduleSave(); reapplyTelescopeHideFilter(); });
+    card.querySelectorAll('.step-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const dir = Number(btn.dataset.step);
+        const cur = Math.max(0, Math.min(u.maxLevel, Number(state.telescope[u.name])||0));
+        const v = Math.max(0, Math.min(u.maxLevel, cur+dir));
+        levelInp.value = v;
+        commitLevel(v);
+        scheduleSave();
+        reapplyTelescopeHideFilter();
+      });
+    });
+    el.appendChild(card);
+  });
+}
+
+function refreshTelescopeCard(card, u){
+  const { lvl, perLevel, total, done } = telescopeRemaining(u);
+  const pct = u.maxLevel ? Math.max(0,Math.min(100,(lvl/u.maxLevel)*100)) : 0;
+  card.className = 'card' + (done ? ' maxed' : '');
+  card.querySelector('.upg-level').innerHTML = `Level <b>${lvl}</b> / ${u.maxLevel}`;
+  card.querySelector('.bar-fill').style.width = pct+'%';
+  const needEl = card.querySelector('.need');
+  needEl.className = 'need' + (done?' done':'');
+  needEl.innerHTML = `<span>${done ? 'Maxed' : 'Total remaining'}</span><b>${done?'\u2713':fmt(total)}</b>`;
+  const existingList = card.querySelector('.vein-list');
+  const newHtml = perLevelListHtml(perLevel);
+  if(existingList) existingList.outerHTML = newHtml;
+  else if(newHtml) card.insertAdjacentHTML('beforeend', newHtml);
+}
+
+const TABS = [
+  {btn:'tabStars', view:'starsView'},
+  {btn:'tabTelescope', view:'telescopeView'},
+  {btn:'tabOres', view:'oresView'},
+  {btn:'tabStatue', view:'statueView'},
+];
+function switchTab(activeBtnId){
+  TABS.forEach(({btn,view})=>{
+    const isActive = btn === activeBtnId;
+    document.getElementById(btn).classList.toggle('active', isActive);
+    document.getElementById(view).style.display = isActive ? '' : 'none';
+  });
+}
+TABS.forEach(({btn})=> document.getElementById(btn).addEventListener('click', ()=> switchTab(btn)));
+
+// ---- Ores ----
+function fieldOrOne(raw){
+  const s = (raw||'').trim();
+  return s === '' ? 1 : parseDamageInput(s);
+}
+function currentOreDamage(){
+  const critRaw = (state.critDamage||'').trim();
+  const bombRaw = (state.bombDamage||'').trim();
+  if(critRaw === '' && bombRaw === '') return 0;
+  return fieldOrOne(state.critDamage) * fieldOrOne(state.bombDamage);
+}
+
+function oreBadgesHtml(o){
+  const badges = [];
+  if(o.dmgReduction) badges.push(`<span class="ore-badge dmgred">Dmg -${o.dmgReduction}%</span>`);
+  if(o.bombReduction) badges.push(`<span class="ore-badge dmgred">Bomb Dmg -${o.bombReduction}%</span>`);
+  if(o.critTier) badges.push(`<span class="ore-badge crit">${o.critTier} crit+ only</span>`);
+  if(o.info) badges.push(`<span class="ore-badge">${o.info}</span>`);
+  return badges.join('') || '\u2014';
+}
+const ORE_BY_BASE_NAME = {};
+ORE_WORLDS.forEach(w=> w.ores.forEach(o=>{
+  const base = o.name.replace(/ Ore$/,'');
+  ORE_BY_BASE_NAME[base] = o;
+}));
+
+function renderOreWorlds(){
+  const el = document.getElementById('oreWorlds');
+  const dmg = currentOreDamage();
+  el.innerHTML = ORE_WORLDS.map(w=>{
+    const hidden = !!(state.hiddenWorlds && state.hiddenWorlds[w.world]);
+    const rows = w.ores.map(o=>{
+      const pass = dmg > 0 && dmg >= o.required;
+      const deficit = (dmg>0 && !pass) ? (o.required / dmg) : null;
+      const rowClass = dmg<=0 ? '' : (pass ? 'pass' : 'fail');
+      const statusText = dmg<=0 ? '\u2014' : (pass ? '\u2713' : 'need ' + fmt(deficit) + 'x more');
+      return `<tr class="${rowClass}">
+        <td class="ore-name">${o.name}<div style="font-size:9.5px;color:var(--text-faint);font-weight:400;">Floors ${o.floors}</div></td>
+        <td>${fmt(o.health)}</td>
+        <td>${oreBadgesHtml(o)}</td>
+        <td>${fmt(o.required)}</td>
+        <td>${statusText}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="panel">
+      <div class="panel-head">
+        <h2>World ${w.world}</h2>
+        <label class="world-hide-toggle"><input type="checkbox" data-hide-world="${w.world}" ${hidden?'checked':''}/> Hide</label>
+      </div>
+      <table class="ore-table${hidden?' collapsed':''}">
+        <thead><tr><th>Ore</th><th>Health</th><th>Modifiers</th><th>Dmg needed (1-hit)</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('[data-hide-world]').forEach(cb=>{
+    cb.addEventListener('change', e=>{
+      if(!state.hiddenWorlds) state.hiddenWorlds = {};
+      state.hiddenWorlds[e.target.dataset.hideWorld] = e.target.checked;
+      scheduleSave();
+      const table = e.target.closest('.panel').querySelector('.ore-table');
+      table.classList.toggle('collapsed', e.target.checked);
+    });
+  });
+}
+
+// ---- World 3 Platinized Statue ----
+function renderStatue(){
+  const rowsEl = document.getElementById('statueRows');
+  rowsEl.innerHTML = STATUE_ROWS.map(row=>{
+    const done = !!(state.statueDone && state.statueDone[row.n]);
+    const barNames = row.bars.map(([name])=>name).join(', ');
+    return `
+      <div class="shared-item${done?' full':''}">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" data-statue-row="${row.n}" ${done?'checked':''}/>
+          <span class="slabel">Level ${row.n}</span>
+        </label>
+        <div class="sapplies">${barNames}</div>
+      </div>`;
+  }).join('');
+
+  rowsEl.querySelectorAll('[data-statue-row]').forEach(cb=>{
+    cb.addEventListener('change', e=>{
+      if(!state.statueDone) state.statueDone = {};
+      state.statueDone[e.target.dataset.statueRow] = e.target.checked;
+      scheduleSave();
+      renderStatue();
+    });
+  });
+
+  const barTotals = {};
+  const veinTotals = {};
+  let gemTotal = 0;
+  STATUE_ROWS.forEach(row=>{
+    if(state.statueDone && state.statueDone[row.n]) return;
+    row.bars.forEach(([name,amt])=>{ barTotals[name] = (barTotals[name]||0) + amt; });
+    const [vType,vAmt] = row.vein;
+    veinTotals[vType] = (veinTotals[vType]||0) + vAmt;
+    gemTotal += row.gems;
+  });
+
+  const barsBody = document.getElementById('statueBarsBody');
+  const entries = Object.entries(barTotals);
+  if(entries.length === 0){
+    barsBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--green);padding:14px;">All levels complete \u2713</td></tr>`;
+  } else {
+    const floorStart = f => parseInt(f.split('-')[0],10);
+    const floorEnd = f => parseInt(f.split('-')[1],10);
+    entries.sort((a,b)=>{
+      const fa = BAR_FLOORS[a[0]] || '999-999', fb = BAR_FLOORS[b[0]] || '999-999';
+      return floorStart(fa)-floorStart(fb) || floorEnd(fa)-floorEnd(fb);
+    });
+    barsBody.innerHTML = entries.map(([name,amt])=>{
+      const ore = ORE_BY_BASE_NAME[name];
+      const mods = ore ? oreBadgesHtml(ore) : '\u2014';
+      return `<tr><td class="ore-name">${name} Bars</td><td>${mods}</td><td>${fmt(amt)}</td><td>${BAR_FLOORS[name]||'\u2014'}</td></tr>`;
+    }).join('');
+  }
+
+  const otherEl = document.getElementById('statueOtherGrid');
+  const veinEntries = Object.entries(veinTotals).sort((a,b)=>veinCompare(a[0]+' Vein', b[0]+' Vein'));
+  let otherHtml = veinEntries.map(([type,amt])=>`
+    <div class="shared-item"><div class="slabel">${type} Vein</div><div class="sapplies" style="font-family:'Spectral',serif;font-size:15px;color:var(--gold);">${fmt(amt)}</div></div>
+  `).join('');
+  otherHtml += `<div class="shared-item"><div class="slabel">Gems</div><div class="sapplies" style="font-family:'Spectral',serif;font-size:15px;color:var(--gold);">${gemTotal.toLocaleString()}</div></div>`;
+  otherEl.innerHTML = otherHtml || `<div class="vein-empty">All levels complete \u2014 nothing left to gather.</div>`;
+}
+
+const globalHourlyGainEl = document.getElementById('globalHourlyGain');
+globalHourlyGainEl.addEventListener('input', e=>{
+  state.hourlyGain = e.target.value;
+  renderStars(); // every star's time estimate depends on this one rate
+  renderExtraStars(); // its per-star time-to-farm hints depend on the rate too
+  renderSummary();
+});
+globalHourlyGainEl.addEventListener('change', ()=> scheduleSave());
+document.getElementById('spooningToggle').addEventListener('change', e=>{
+  state.spooning = e.target.checked;
+  renderStars();
+  renderExtraStars();
+  renderSummary();
+  scheduleSave();
+});
+
+const critDamageInputEl = document.getElementById('critDamageInput');
+const bombDamageInputEl = document.getElementById('bombDamageInput');
+const damageResolvedEl = document.getElementById('damageResolved');
+function updateOreDamageDisplay(){
+  const val = currentOreDamage();
+  damageResolvedEl.textContent = val>0 ? fmt(val) : '';
+  renderOreWorlds();
+}
+critDamageInputEl.addEventListener('input', e=>{ state.critDamage = e.target.value; updateOreDamageDisplay(); });
+critDamageInputEl.addEventListener('change', ()=> scheduleSave());
+bombDamageInputEl.addEventListener('input', e=>{ state.bombDamage = e.target.value; updateOreDamageDisplay(); });
+bombDamageInputEl.addEventListener('change', ()=> scheduleSave());
+
+async function load(){
+  try{
+    const res = await window.storage.get('stargazing-data', false);
+    if(res && res.value){
+      const parsed = JSON.parse(res.value);
+      if(parsed && parsed.version === DATA_VERSION && Array.isArray(parsed.stars) && parsed.stars.length === DEFAULT_STARS.length){
+        state = parsed;
+        if(!state.shared) state.shared = {};
+        SHARED_DEFS.forEach(d=>{ if(state.shared[d.id] === undefined) state.shared[d.id] = 0; });
+        normalizeTelescope();
+        if(state.critDamage === undefined) state.critDamage = '';
+        if(state.bombDamage === undefined) state.bombDamage = '';
+        if(state.hourlyGain === undefined) state.hourlyGain = '';
+        if(state.spooning === undefined) state.spooning = false;
+        if(!state.hiddenWorlds) state.hiddenWorlds = {};
+        if(!state.collapsedPanels) state.collapsedPanels = {};
+        if(state.statueDataVersion !== STATUE_DATA_VERSION){
+          state.statueDone = {};
+          state.statueDataVersion = STATUE_DATA_VERSION;
+        } else if(!state.statueDone){
+          state.statueDone = {};
+        }
+      } else if(parsed && Array.isArray(parsed.stars)){
+        state = migrate(parsed);
+        scheduleSave();
+      }
+    }
+  }catch(err){ /* no saved data yet */ }
+  document.getElementById('hideCompleted').checked = !!state.hideCompleted;
+  document.getElementById('telescopeHideCompleted').checked = !!state.telescopeHideCompleted;
+  globalHourlyGainEl.value = state.hourlyGain || '';
+  document.getElementById('spooningToggle').checked = !!state.spooning;
+  critDamageInputEl.value = state.critDamage || '';
+  bombDamageInputEl.value = state.bombDamage || '';
+  initCollapsiblePanels();
+  const resolvedVal = currentOreDamage();
+  damageResolvedEl.textContent = resolvedVal>0 ? fmt(resolvedVal) : '';
+  render();
+}
+
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
+  if(!confirm('Reset all stars back to defaults?')) return;
+  state = {
+    stars: JSON.parse(JSON.stringify(DEFAULT_STARS)),
+    shared: Object.fromEntries(SHARED_DEFS.map(d=>[d.id,0])),
+    telescope: Object.fromEntries(TELESCOPE_UPGRADES.map(u=>[u.name,0])),
+    hideCompleted: false,
+    telescopeHideCompleted: false,
+    hourlyGain: '',
+    spooning: false,
+    critDamage: '',
+    bombDamage: '',
+    hiddenWorlds: {},
+    statueDone: {},
+    statueDataVersion: STATUE_DATA_VERSION,
+    collapsedPanels: {},
+    version: DATA_VERSION
+  };
+  document.getElementById('spooningToggle').checked = false;
+  document.getElementById('hideCompleted').checked = false;
+  document.getElementById('telescopeHideCompleted').checked = false;
+  globalHourlyGainEl.value = '';
+  critDamageInputEl.value = '';
+  bombDamageInputEl.value = '';
+  damageResolvedEl.textContent = '';
+  applyCollapsedPanels();
+  try{ await window.storage.set('stargazing-data', JSON.stringify(state), false); }catch(e){}
+  render();
+});
+
+load();
+</script>
+</body>
+</html>

@@ -128,7 +128,6 @@
     background:transparent;border:none;color:#fff;font-family:'Spectral',serif;
     font-size:16px;font-weight:600;padding:0;width:100%;
   }
-  .cname:focus{outline:none;border-bottom:1px solid var(--gold-dim);}
   .clevel{font-size:12px;color:var(--text-dim);}
   .clevel b{color:var(--gold);font-weight:600;}
   .perk{font-size:10.5px;color:var(--text-faint);line-height:1.4;margin:2px 0 12px;font-style:italic;}
@@ -611,6 +610,21 @@ let state = {
 };
 let saveTimer = null;
 
+// Star names and cost/cap definitions are fixed game data: always take them from
+// DEFAULT_STARS (matched by id) rather than trusting the saved copy. Cap sources and
+// cost overrides are looked up by name, so a stale or edited name would break them.
+function normalizeStars(){
+  state.stars.forEach(s=>{
+    const def = DEFAULT_STARS.find(d=>d.id===s.id);
+    if(!def) return;
+    s.name = def.name;
+    s.baseCost = def.baseCost;
+    s.mult = def.mult;
+    s.baseLevel = def.baseLevel;
+    s.perk = def.perk;
+  });
+}
+
 function normalizeTelescope(){
   if(!state.telescope) state.telescope = {};
   TELESCOPE_UPGRADES.forEach(u=>{ if(state.telescope[u.name] === undefined) state.telescope[u.name] = 0; });
@@ -619,8 +633,15 @@ function normalizeTelescope(){
 function sharedInputMax(def){ return def.perLevel ? def.levels : def.value; }
 
 function migrate(oldData){
+  // Key old stars by their canonical name (looked up by id), so a star renamed in an
+  // older version still matches its cap sources and saved progress.
   const byName = {};
-  (oldData.stars||[]).forEach(s=>{ if(s && s.name) byName[s.name] = s; });
+  (oldData.stars||[]).forEach(s=>{
+    if(!s) return;
+    const def = DEFAULT_STARS.find(d=>d.id===s.id);
+    const key = def ? def.name : s.name;
+    if(key) byName[key] = s;
+  });
 
   const shared = {};
   SHARED_DEFS.forEach(def=>{
@@ -1108,7 +1129,7 @@ function renderStars(){
       <div class="card-top">
         ${starGaugeSVG(pct, maxed)}
         <div style="flex:1;min-width:0;">
-          <input class="cname" value="${s.name}" data-field="name" />
+          <div class="cname">${s.name}</div>
           <div class="clevel">Level <b>${level}</b> / ${target} <span style="opacity:.6">(base ${s.baseLevel}, ceiling ${ceiling})</span></div>
         </div>
       </div>
@@ -1153,10 +1174,6 @@ function renderStars(){
       renderSummary();
       scheduleSave();
     });
-    const nameInp = card.querySelector('[data-field="name"]');
-    nameInp.addEventListener('input', e=>{ s.name = e.target.value; });
-    nameInp.addEventListener('change', ()=> scheduleSave());
-
     const levelInp = card.querySelector('[data-field="level"]');
     levelInp.addEventListener('input', e=>{ s.level = e.target.value; updateStarDisplay(card, s); });
     levelInp.addEventListener('change', ()=>{ scheduleSave(); reapplyHideFilter(); });
@@ -1236,6 +1253,7 @@ document.getElementById('restoreFile').addEventListener('change', e=>{
         state = parsed;
         if(!state.shared) state.shared = {};
         SHARED_DEFS.forEach(d=>{ if(state.shared[d.id] === undefined) state.shared[d.id] = 0; });
+        normalizeStars();
         normalizeTelescope();
         if(state.critDamage === undefined) state.critDamage = '';
         if(state.bombDamage === undefined) state.bombDamage = '';
@@ -1589,6 +1607,7 @@ async function load(){
         state = parsed;
         if(!state.shared) state.shared = {};
         SHARED_DEFS.forEach(d=>{ if(state.shared[d.id] === undefined) state.shared[d.id] = 0; });
+        normalizeStars();
         normalizeTelescope();
         if(state.critDamage === undefined) state.critDamage = '';
         if(state.bombDamage === undefined) state.bombDamage = '';

@@ -264,6 +264,7 @@
           </div>
           <label class="toggle-row" title="Adds 25% to your hourly gain"><input type="checkbox" id="spooningToggle"/> Spooning (+25%)</label>
           <label class="toggle-row"><input type="checkbox" id="hideCompleted"/> Hide completed</label>
+          <button type="button" id="restoreRemovedBtn" class="toggle-row" style="display:none;background:none;border:1px solid var(--border-hi);border-radius:6px;padding:4px 8px;"></button>
           <button class="collapse-toggle" data-panel-key="stars" title="Collapse/expand">&#9660;</button>
         </div>
       </div>
@@ -656,6 +657,7 @@ function migrate(oldData){
       if(old.stock !== undefined && old.stock !== null && old.stock !== '') fresh.stock = old.stock;
       if(old.extra !== undefined && old.extra !== null) fresh.extra = old.extra;
       if(old.excludeTotal !== undefined) fresh.excludeTotal = !!old.excludeTotal;
+      if(old.removed) fresh.removed = true;
     }
     return fresh;
   });
@@ -986,22 +988,29 @@ function reapplyHideFilter(){
   if(state.hideCompleted) renderStars();
 }
 
+// Stars the user hasn't removed with the card's × button. Removed stars stay in
+// state (flagged) so the removal survives reloads and can be undone.
+function activeStars(){
+  return state.stars.filter(s=>!s.removed);
+}
+
 function renderSummary(){
-  const totalRemaining = state.stars.reduce((sum,s)=>sum + costToLevel(s, targetFor(s)), 0);
-  const maxedCount = state.stars.filter(s=>(Number(s.level)||0) >= targetFor(s)).length;
-  const times = state.stars
-    .filter(s => (Number(s.level)||0) > 0 && !s.excludeTotal) // level 0 = not unlocked yet; excludeTotal = manually skipped
-    .map(s=>{
-      const t = hoursToMax(s, targetFor(s));
-      return (t===null ? 0 : t) + hoursForExtra(s);
-    });
+  const active = activeStars();
+  const maxedCount = active.filter(s=>(Number(s.level)||0) >= targetFor(s)).length;
+  // Same set of stars for both totals: level 0 = not unlocked yet; excludeTotal = manually skipped.
+  const counted = active.filter(s => (Number(s.level)||0) > 0 && !s.excludeTotal);
+  const totalRemaining = counted.reduce((sum,s)=>sum + costToLevel(s, targetFor(s)) + Math.max(0, parseDamageInput(s.extra||'')), 0);
+  const times = counted.map(s=>{
+    const t = hoursToMax(s, targetFor(s));
+    return (t===null ? 0 : t) + hoursForExtra(s);
+  });
   // Sum, not max: only one star is farmed at a time, so total time is sequential.
   const timeToMaxAll = times.reduce((a,b)=>a+b, 0);
   const el = document.getElementById('summary');
   el.innerHTML = `
-    <div class="stat"><div class="label">Stars tracked</div><div class="value">${state.stars.length}</div></div>
-    <div class="stat"><div class="label">At target</div><div class="value">${maxedCount} / ${state.stars.length}</div></div>
-    <div class="stat"><div class="label">Total left to target</div><div class="value">${fmt(totalRemaining)}</div></div>
+    <div class="stat"><div class="label">Stars tracked</div><div class="value">${active.length}</div></div>
+    <div class="stat"><div class="label">At target</div><div class="value">${maxedCount} / ${active.length}</div></div>
+    <div class="stat"><div class="label">Total left to max all</div><div class="value">${fmt(totalRemaining)}</div></div>
     <div class="stat"><div class="label">Time to max all stars</div><div class="value">${formatDuration(timeToMaxAll)}</div></div>
   `;
 }
@@ -1051,7 +1060,7 @@ function extraResolvedText(s){
 function renderExtraStars(){
   const el = document.getElementById('extraStarsGrid');
   el.innerHTML = '';
-  state.stars.forEach(s=>{
+  activeStars().forEach(s=>{
     const item = document.createElement('div');
     item.className = 'extra-item' + (s.extra ? ' set' : '');
     item.innerHTML = `
@@ -1087,7 +1096,11 @@ function starGaugeSVG(pct, maxed){
 function renderStars(){
   const el = document.getElementById('starGrid');
   el.innerHTML = '';
-  state.stars.forEach(s=>{
+  const removedCount = state.stars.length - activeStars().length;
+  const restoreBtn = document.getElementById('restoreRemovedBtn');
+  restoreBtn.style.display = removedCount ? '' : 'none';
+  restoreBtn.textContent = `Restore removed (${removedCount})`;
+  activeStars().forEach(s=>{
     const level = Number(s.level)||0;
     const target = targetFor(s);
     const ceiling = ceilingFor(s);
@@ -1144,7 +1157,7 @@ function renderStars(){
       <label class="toggle-row count-toggle"><input type="checkbox" class="count-toggle-input" ${s.excludeTotal?'':'checked'}/> Count toward "Time to max all stars"</label>
     `;
     card.querySelector('.remove-btn').addEventListener('click', ()=>{
-      state.stars = state.stars.filter(x=>x.id!==s.id);
+      s.removed = true;
       scheduleSave(); render();
     });
     card.querySelector('.count-toggle-input').addEventListener('change', e=>{
@@ -1289,6 +1302,12 @@ document.getElementById('hideCompleted').addEventListener('change', e=>{
   state.hideCompleted = e.target.checked;
   scheduleSave();
   renderStars();
+});
+
+document.getElementById('restoreRemovedBtn').addEventListener('click', ()=>{
+  state.stars.forEach(s=>{ delete s.removed; });
+  scheduleSave();
+  render();
 });
 
 document.getElementById('telescopeHideCompleted').addEventListener('change', e=>{

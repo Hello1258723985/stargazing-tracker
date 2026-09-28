@@ -377,7 +377,7 @@
   </div>
 
   <footer>
-    Saved automatically to this artifact.
+    Saved automatically in this browser. Use "Download backup" to move your data to another device.
     <div id="saveWarn">Couldn't save just now — your changes are still on screen. <button id="retrySaveBtn" type="button">Retry save</button></div>
     <br>
     <button id="downloadBtn">Download backup</button>
@@ -1187,6 +1187,20 @@ function renderStars(){
   });
 }
 
+// Persistence: claude.ai artifacts provide window.storage; anywhere else (GitHub Pages,
+// opening the file locally) fall back to the browser's localStorage.
+const store = {
+  async get(key){
+    if(window.storage) return window.storage.get(key, false);
+    const value = localStorage.getItem(key);
+    return value === null ? null : { value };
+  },
+  async set(key, value){
+    if(window.storage) return window.storage.set(key, value, false);
+    localStorage.setItem(key, value);
+  }
+};
+
 function scheduleSave(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>trySave(0), 400);
@@ -1195,7 +1209,7 @@ function scheduleSave(){
 async function trySave(attempt){
   const warn = document.getElementById('saveWarn');
   try{
-    await window.storage.set('stargazing-data', JSON.stringify(state), false);
+    await store.set('stargazing-data', JSON.stringify(state));
     if(warn) warn.style.display = 'none';
   }catch(err){
     if(attempt < 3){
@@ -1582,7 +1596,7 @@ bombDamageInputEl.addEventListener('change', ()=> scheduleSave());
 
 async function load(){
   try{
-    const res = await window.storage.get('stargazing-data', false);
+    const res = await store.get('stargazing-data');
     if(res && res.value){
       const parsed = JSON.parse(res.value);
       if(parsed && parsed.version === DATA_VERSION && Array.isArray(parsed.stars) && parsed.stars.length === DEFAULT_STARS.length){
@@ -1646,7 +1660,7 @@ document.getElementById('resetBtn').addEventListener('click', async ()=>{
   bombDamageInputEl.value = '';
   damageResolvedEl.textContent = '';
   applyCollapsedPanels();
-  try{ await window.storage.set('stargazing-data', JSON.stringify(state), false); }catch(e){}
+  try{ await store.set('stargazing-data', JSON.stringify(state)); }catch(e){}
   render();
 });
 

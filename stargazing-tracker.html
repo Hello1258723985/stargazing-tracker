@@ -156,6 +156,7 @@
     color:var(--text);font-size:13px;padding:5px 7px;font-family:'Inter',sans-serif;margin-top:2px;
   }
   .extra-star-input:focus{outline:none;border-color:var(--gold-dim);}
+  .extra-item .extra-label{font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--text-faint);margin-top:4px;}
   .extra-item .resolved{font-size:11px;color:var(--gold-dim);min-height:14px;}
   .field input{
     width:100%;background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;
@@ -437,7 +438,7 @@ const DEFAULT_STARS = [
   ["Lynx",10000000000000,1.25,48,"Star Radiant Multi +1% · Infernal Card +0.25%"],
   ["Vulpecula",16000000000000,1.25,38,"Galactic Portal Chance +0.25% · Multi +1%"],
 ].map(([name,baseCost,mult,baseLevel,perk],i)=>({
-  id:'s'+i, name, level:1, stock:0, extra:'', excludeTotal:false, baseCost, mult, baseLevel, perk
+  id:'s'+i, name, level:1, stock:0, extra:'', extraHave:'', excludeTotal:false, baseCost, mult, baseLevel, perk
 }));
 
 const TELESCOPE_UPGRADES = [
@@ -677,6 +678,7 @@ function migrate(oldData){
       if(old.level !== undefined && old.level !== null && old.level !== '') fresh.level = old.level;
       if(old.stock !== undefined && old.stock !== null && old.stock !== '') fresh.stock = old.stock;
       if(old.extra !== undefined && old.extra !== null) fresh.extra = old.extra;
+      if(old.extraHave !== undefined && old.extraHave !== null) fresh.extraHave = old.extraHave;
       if(old.excludeTotal !== undefined) fresh.excludeTotal = !!old.excludeTotal;
       if(old.removed) fresh.removed = true;
     }
@@ -908,9 +910,15 @@ function hoursToMax(star, target){
   const gain = currentHourlyGain();
   return gain > 0 ? remaining/gain : Infinity;
 }
+// What's still left to gather for the "Extra" need: amount needed minus current amount.
+function extraRemaining(star){
+  const need = parseDamageInput(star.extra||'');
+  const have = parseDamageInput(star.extraHave||'');
+  return Math.max(0, need - have);
+}
 // Time to farm the "Extra" one-off amount - entirely separate from leveling.
 function hoursForExtra(star){
-  const amt = parseDamageInput(star.extra||'');
+  const amt = extraRemaining(star);
   if(amt <= 0) return 0;
   const gain = currentHourlyGain();
   return gain > 0 ? amt/gain : Infinity;
@@ -1020,7 +1028,7 @@ function renderSummary(){
   const maxedCount = active.filter(s=>(Number(s.level)||0) >= targetFor(s)).length;
   // Same set of stars for both totals: level 0 = not unlocked yet; excludeTotal = manually skipped.
   const counted = active.filter(s => (Number(s.level)||0) > 0 && !s.excludeTotal);
-  const totalRemaining = counted.reduce((sum,s)=>sum + costToLevel(s, targetFor(s)) + Math.max(0, parseDamageInput(s.extra||'')), 0);
+  const totalRemaining = counted.reduce((sum,s)=>sum + costToLevel(s, targetFor(s)) + extraRemaining(s), 0);
   const times = counted.map(s=>{
     const t = hoursToMax(s, targetFor(s));
     return (t===null ? 0 : t) + hoursForExtra(s);
@@ -1073,10 +1081,16 @@ function renderShared(){
 
 function extraResolvedText(s){
   if(!s.extra) return '';
-  const amt = parseDamageInput(s.extra);
+  const need = parseDamageInput(s.extra);
+  const left = extraRemaining(s);
+  if(left <= 0) return '= '+fmt(need)+' — done ✓';
   const hrs = hoursForExtra(s);
   const timePart = hrs>0 ? ' ('+formatDuration(hrs)+')' : '';
-  return '= '+fmt(amt)+timePart;
+  const leftPart = s.extraHave ? ' · '+fmt(left)+' left' : '';
+  return '= '+fmt(need)+leftPart+timePart;
+}
+function escapeAttr(str){
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 }
 function renderExtraStars(){
   const el = document.getElementById('extraStarsGrid');
@@ -1086,18 +1100,22 @@ function renderExtraStars(){
     item.className = 'extra-item' + (s.extra ? ' set' : '');
     item.innerHTML = `
       <div class="slabel">${s.name}</div>
-      <input class="extra-star-input" type="text" inputmode="text" value="${s.extra||''}" placeholder="e.g. 25b+350m"/>
+      <label class="extra-label">Amount needed</label>
+      <input class="extra-star-input" data-extra-field="extra" type="text" inputmode="text" value="${escapeAttr(s.extra||'')}" placeholder="e.g. 25b+350m"/>
+      <label class="extra-label">Current amount</label>
+      <input class="extra-star-input" data-extra-field="extraHave" type="text" inputmode="text" value="${escapeAttr(s.extraHave||'')}" placeholder="e.g. 10b"/>
       <div class="resolved">${extraResolvedText(s)}</div>
     `;
-    const inp = item.querySelector('.extra-star-input');
-    inp.addEventListener('input', e=>{
-      s.extra = e.target.value;
-      item.classList.toggle('set', !!s.extra);
-      item.querySelector('.resolved').textContent = extraResolvedText(s);
-      renderStars(); // only the star grid needs updating; this input lives in a different panel
-      renderSummary();
+    item.querySelectorAll('[data-extra-field]').forEach(inp=>{
+      inp.addEventListener('input', e=>{
+        s[inp.dataset.extraField] = e.target.value;
+        item.classList.toggle('set', !!s.extra);
+        item.querySelector('.resolved').textContent = extraResolvedText(s);
+        renderStars(); // only the star grid needs updating; this input lives in a different panel
+        renderSummary();
+      });
+      inp.addEventListener('change', ()=>{ scheduleSave(); reapplyHideFilter(); });
     });
-    inp.addEventListener('change', ()=>{ scheduleSave(); reapplyHideFilter(); });
     el.appendChild(item);
   });
 }
